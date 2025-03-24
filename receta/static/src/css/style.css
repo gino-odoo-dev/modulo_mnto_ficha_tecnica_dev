@@ -1,0 +1,23 @@
+.o_form_view .o_inner_group {
+    margin-bottom: 10px !important;
+} 
+
+.pb-2  {
+    margin-bottom: 30px !important;
+} 
+
+.o_list_record_remove button {
+    color: #ff0000 !important;
+}
+
+.o_form_view .o_horizontal_separator:not(:empty) {
+    font-size: 16px !important;
+}
+
+.mt-4 {
+    margin-top: 10px !important;
+}
+
+.fw-bolder {
+    font-weight: normal !important;
+}
