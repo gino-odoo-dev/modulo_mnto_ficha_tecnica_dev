@@ -5,7 +5,7 @@
             <field name="name">receta.fichatecnica.view.tree</field>
             <field name="model">receta.fichatecnica</field>
             <field name="arch" type="xml">
-                <tree string="Ficha Técnica" editable="bottom" delete="true">
+                <tree string="Ficha Tecnica" editable="bottom" delete="true">
                     <field name="temporadas_id"/>
                     <field name="articulos_id"/>
                     <button name="unlink" type="object" string="Eliminar" class="btn-danger"/>
@@ -17,7 +17,7 @@
             <field name="model">receta.fichatecnica</field>
             <field name="priority">10</field>
             <field name="arch" type="xml">
-                <form string="Ficha Técnica">
+                <form string="Ficha Tecnica">
                     <sheet>
                         <div class="row">
                             <div class="col-lg-6 col-md-6">
@@ -30,8 +30,8 @@
                             <div class="col-lg-6 col-md-6">
                                 <group string="Copia Ficha Tecnica">
                                     <field name="copia_temporadas" class="field"/>
-                                    <field name="m_numero_color" class="field"/>
                                     <field name="part_o" string="Artículo Origen" class="field"/>
+                                    <field name="m_numero_color" class="field"/>
                                     <field name="part_d" string="Artículo Destino" class="field"/>
                                     <button name="next_button" string="Siguiente" type="object" class="btn-primary"/>
                                 </group>

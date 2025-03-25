@@ -3,34 +3,37 @@ from odoo.exceptions import ValidationError
 
 class FichaTecnica(models.Model):
     _name = 'receta.fichatecnica'
-    _description = 'Ficha Técnica'
+    _description = 'Ficha Tecnica'
     _rec_name = "nombre_ficha"
+
+# campos ficha tecnica 
 
     temporadas_id = fields.Many2one('cl.product.temporada', string='Temporada') 
     articulos_id = fields.Many2one('cl.product.articulo', string='Artículo')  
     state = fields.Selection([('draft', 'Draft'), ('progress', 'Progress'), ('done', 'Done')], string='State', default='progress') 
-    copia_temporadas = fields.Many2one('cl.product.temporada', string='Temporada', default=False) 
-    m_numero_color = fields.Boolean(string="Copiar Numeraciones/Ficha Tecnica", default=True)  
-    part_o = fields.Many2one('cl.product.articulo', string='Articulo Origen', required=False) 
-    part_d = fields.Many2one('cl.product.articulo', string='Articulo Destino', required=False) 
-
     componentes_ids = fields.One2many('cl.product.componente', 'ficha_tecnica_id', string='Componentes')  
-  
     nombre_ficha = fields.Char(string='Nombre de Ficha Tecnica', compute='_compute_nombre_ficha', store=True, readonly=True, default="Sin Nombre")
     company_id = fields.Many2one('res.company', string="Compañía", default=lambda self: self.env.company)
 
+# campos copia ficha tecnica
+
+    part_o = fields.Many2one('cl.product.articulo', string='Articulo Origen', required=False) 
+    part_d = fields.Many2one('cl.product.articulo', string='Articulo Destino', required=False)
+    m_numero_color = fields.Boolean(string="Copiar Numeraciones/Ficha Tecnica", default=True)  
+    copia_temporadas = fields.Many2one('cl.product.temporada', string='Temporada', default=False) 
+    
     copia = fields.Boolean(string="Copia")
     m_modelo_o = fields.Char(string="Modelo Origen")
     m_modelo_d = fields.Char(string="Modelo Destino")
     no_comb_o = fields.Char(string="Numero Combinaciones Origen")
     no_comb_d = fields.Char(string="Numero Combinaciones Destino")
-    remplaza = fields.Char(string="Remplaza")
-    mensaje = fields.Char(string="Mensaje", readonly=True)
     xcuero = fields.Char(string="Cuero", size=3)
     xcolor = fields.Char(string="Color", size=3)
     xplnta = fields.Char(string="Plnta", size=3)
     xcolfo = fields.Char(string="Color", size=3)
     sequence = fields.Integer(string="Secuencia", default=10)
+    mensaje = fields.Char(string="Mensaje", readonly=True)
+    xcuero = fields.Char(string="Cuero", size=3)
 
     @api.depends('temporadas_id')
     def _compute_temporada_name(self):
@@ -48,7 +51,13 @@ class FichaTecnica(models.Model):
             record.nombre_ficha = record.articulos_id.name if record.articulos_id else 'Sin Nombre'
 
     def next_button(self):
-        pass 
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Copia Ficha Tecnica',
+            'res_model': 'copia.ficha.tecnica.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+        }
 
     def unlink(self):
         for record in self:
@@ -464,13 +473,13 @@ class FichaTecnica(models.Model):
         ], limit=1)
 
         if not articulo_destino:
-            raise ValidationError("El artículo destino no existe.")
+            raise ValidationError("El articulo destino no existe.")
 
 # Asignar valores a xcuero, xcolor, xplnta, y xcolfo
-        self.xcuero = articulo_destino.pt__chr01  # Campo de cuero
-        self.xcolor = articulo_destino.pt__chr02  # Campo de color
-        self.xplnta = articulo_destino.pt__chr06  # Campo de planta
-        self.xcolfo = articulo_destino.pt__chr07  # Campo de forro
+        self.xcuero = articulo_destino.pt__chr01  
+        self.xcolor = articulo_destino.pt__chr02 
+        self.xplnta = articulo_destino.pt__chr06 
+        self.xcolfo = articulo_destino.pt__chr07 
 
 # Cambiar el color del forro
         for ps_record in self.env['ps.mstr'].search([
@@ -567,3 +576,4 @@ class FichaTecnica(models.Model):
 
 # Si no se encuentra un nuevo componente, devolver None.
         return None
+

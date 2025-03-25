@@ -9,3 +9,4 @@ from . import factorperdida
 from . import fichatecnica
 from . import secuencia
 from . import temporada
+from . import copia_ficha_tecnica_wizard
