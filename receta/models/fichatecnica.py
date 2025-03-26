@@ -7,7 +7,6 @@ class FichaTecnica(models.Model):
     _rec_name = "nombre_ficha"
 
 # campos ficha tecnica 
-
     temporadas_id = fields.Many2one('cl.product.temporada', string='Temporada') 
     articulos_id = fields.Many2one('cl.product.articulo', string='Artículo')  
     state = fields.Selection([('draft', 'Draft'), ('progress', 'Progress'), ('done', 'Done')], string='State', default='progress') 
@@ -16,7 +15,6 @@ class FichaTecnica(models.Model):
     company_id = fields.Many2one('res.company', string="Compañía", default=lambda self: self.env.company)
 
 # campos copia ficha tecnica
-
     part_o = fields.Many2one('cl.product.articulo', string='Articulo Origen', required=False) 
     part_d = fields.Many2one('cl.product.articulo', string='Articulo Destino', required=False)
     m_numero_color = fields.Boolean(string="Copiar Numeraciones/Ficha Tecnica", default=True)  
@@ -34,6 +32,79 @@ class FichaTecnica(models.Model):
     sequence = fields.Integer(string="Secuencia", default=10)
     mensaje = fields.Char(string="Mensaje", readonly=True)
     xcuero = fields.Char(string="Cuero", size=3)
+
+    def estructura_sku(self):
+        """
+        Funcion que valida el largo de codigo SKU, extrae sus digitos y busca en cada tabla 
+        su registro correspondiente.
+        """
+        if not self.articulos_id or len(self.articulos_id.default_code) != 18:
+            raise ValidationError("El codigo SKU debe tener exactamente 18 caracteres.")
+
+        sku = self.articulos_id.default_code
+
+# Estraer los primeros dos digitos y buscar registros en tabla cl.product.marca
+        first_two_digits = sku[:2]
+        tabla_record = self.env['cl.product.marca'].search([('codigo', '=', first_two_digits)], limit=1)
+        if not tabla_record:
+            raise ValidationError(f"No se encontro un registro para el codigo: {first_two_digits}.")
+        self.write({'marca_name': tabla_record.name})
+
+# Extraer el tercer digito y buscar registros en tabla cl.product.genero
+        third_digit = sku[2]
+        genero_record = self.env['cl.product.genero'].search([('codigo', '=', third_digit)], limit=1)
+        if not genero_record:
+            raise ValidationError(f"No se encontro un registro para el codigo: {third_digit}.")
+        self.write({'genero_name': genero_record.name})
+
+# Extraer desde el cuarto al septimo digito y buscar registros en tabla cl.product.correlativo
+        fourth_to_seventh_digits = sku[3:7]
+        correlativo_record = self.env['cl.product.correlativo'].search([('codigo', '=', fourth_to_seventh_digits)], limit=1)
+        if not correlativo_record:
+            raise ValidationError(f"No se encontro un registro para el codigo: {fourth_to_seventh_digits}.")
+        self.write({'correlativo_name': correlativo_record.name})
+
+# Extrer el octavo digito y buscar registros en tabla cl.product.categoria
+        eighth_digit = sku[7]
+        categoria_record = self.env['cl.product.categoria'].search([('codigo', '=', eighth_digit)], limit=1)
+        if not categoria_record:
+            raise ValidationError(f"No se encontro un registro para el codigo: {eighth_digit}.")
+        self.write({'categoria_name': categoria_record.name})
+
+# Extraer el noveno y decimo digito y buscar registros en tabla cl.product.subcategoria
+        ninth_tenth_digits = sku[8:10]
+        subcategoria_record = self.env['cl.product.subcategoria'].search([('codigo', '=', ninth_tenth_digits)], limit=1)
+        if not subcategoria_record:
+            raise ValidationError(f"No se encontro un registro para el codigo: {ninth_tenth_digits}.")
+        self.write({'subcategoria_name': subcategoria_record.name})
+
+# Extraer el decimo primer digito y buscar registros en tabla  cl.product.temporada
+        eleventh_digit = sku[10]
+        temporada_record = self.env['cl.product.temporada'].search([('codigo', '=', eleventh_digit)], limit=1)
+        if not temporada_record:
+            raise ValidationError(f"No se encontro un registro para el codigo: {eleventh_digit}.")
+        self.write({'temporada_name': temporada_record.name})
+
+# Extraer desde el decimo segundo al decimo tercer digito y buscar registros en tabla cl.product.material
+        twelfth_thirteenth_digits = sku[11:13]
+        material_record = self.env['cl.product.material'].search([('codigo', '=', twelfth_thirteenth_digits)], limit=1)
+        if not material_record:
+            raise ValidationError(f"No se encontro un registro para el codigo: {twelfth_thirteenth_digits}.")
+        self.write({'material_name': material_record.name})
+
+# Extraer desde el decimo cuarto al deicmo quinto digito y buscar registros en tabla cl.product.color
+        fourteenth_fifteenth_digits = sku[13:15]
+        color_record = self.env['cl.product.color'].search([('codigo', '=', fourteenth_fifteenth_digits)], limit=1)
+        if not color_record:
+            raise ValidationError(f"No se encontro un registro para el codigo: {fourteenth_fifteenth_digits}.")
+        self.write({'color_name': color_record.name})
+
+# Extraer desde el decimo sexto alñ decimo octavo registro y buscar registros en tabla cl.product.talla
+        sixteenth_to_eighteenth_digits = sku[15:18]
+        talla_record = self.env['cl.product.talla'].search([('codigo', '=', sixteenth_to_eighteenth_digits)], limit=1)
+        if not talla_record:
+            raise ValidationError(f"No se encontro un registro para el codigo: {sixteenth_to_eighteenth_digits}.")
+        self.write({'talla_name': talla_record.name})
 
     @api.depends('temporadas_id')
     def _compute_temporada_name(self):
@@ -65,7 +136,6 @@ class FichaTecnica(models.Model):
                 raise exceptions.UserError("No se puede eliminar una Ficha Técnica en estado 'Done'.")
         return super(FichaTecnica, self).unlink()
     
-
     def copia_rec_dev(self):
         """
         Funcion principal que realiza las validaciones y copia de recetas.
@@ -462,7 +532,6 @@ class FichaTecnica(models.Model):
         except Exception as e:
             raise ValidationError(f"Error al eliminar las fórmulas existentes: {str(e)}")
 
-    
     def _cambia_materia(self, part_o, m_modelo_o, part_d, m_modelo_d):
         """
         Cambia las materias primas de un artículo según las reglas definidas.
@@ -545,7 +614,6 @@ class FichaTecnica(models.Model):
         ]):
             ps_record.write({'ps_ref': ps_record.ps_ref[1:]})  
 
-
     def _determinar_nuevo_componente(self, pt_record):
         """
         Determina el nuevo componente basado en el componente actual.
@@ -568,12 +636,9 @@ class FichaTecnica(models.Model):
 
         if pt_record.pt_part in mapeo_componentes:
             return mapeo_componentes[pt_record.pt_part]
-
 # Caso 3: Generar el nuevo componente.
 # Agregar un sufijo o prefijo al código original.
         if (pt_record.pt_part.startswith("PT-")):
             return f"PT-NUEVO-{pt_record.pt_part[3:]}"
-
 # Si no se encuentra un nuevo componente, devolver None.
         return None
-

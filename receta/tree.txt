@@ -29,3 +29,8 @@ receta/
     └── fichatecnica.py
     └── secuencia.py
     └── temporada.py
+    └── correlativo.py
+    └── marca.py
+    └── categoria.py
+    └── subcategoria.py
+    └── talla.py
