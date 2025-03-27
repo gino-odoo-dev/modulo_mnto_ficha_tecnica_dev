@@ -21,3 +21,11 @@
 .fw-bolder {
     font-weight: normal !important;
 }
+
+.btn-update {
+    margin-top: 110px;
+}
+
+.btn-next-update {
+    margin-top: 2px !important;
+}

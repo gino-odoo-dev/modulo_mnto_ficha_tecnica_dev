@@ -49,33 +49,50 @@ class FichaTecnica(models.Model):
 
     @api.onchange('temporadas_id')
     def _onchange_temporadas_id(self):
-        """
-        Update copia_temporadas to reflect the value of temporadas_id.
-        """
         for record in self:
             record.copia_temporadas = record.temporadas_id
 
     @api.model
     def create(self, vals):
-        """
-        funcion Create que crea y mantiene registro actualizado de copia_temporadas.
-        """
-        if 'temporadas_id' in vals:
-            vals['copia_temporadas'] = vals['temporadas_id']
-        return super(FichaTecnica, self).create(vals)
+        ficha_tecnica = super(FichaTecnica, self).create(vals)
+        ficha_tecnica.with_context(skip_link_components=True).link_components()
+        return ficha_tecnica
 
     def write(self, vals):
         """
-        funcion que actualiza los datos del registro copia_temporadas.
+        Funcion se sobrescribe con funcikon link_components para cada articulo y se pueda reflejar en la lista.
         """
-        if 'temporadas_id' in vals:
-            vals['copia_temporadas'] = vals['temporadas_id']
-        return super(FichaTecnica, self).write(vals)
+        result = super(FichaTecnica, self).write(vals)
+        if not self.env.context.get('skip_link_components'):
+            self.with_context(skip_link_components=True).link_components()
+        return result
+
+    def link_components(self):
+        """
+        Funcion que agrega componentes a la ficha tecnica.
+        """
+        for record in self:
+            if record.articulos_id:
+# Buscar componentes que pertenecen al articulo seleccionado y que no estan ya asignados a esta ficha
+                existing_component_ids = record.componentes_ids.ids
+                components = self.env['cl.product.componente'].search([
+                    ('articulo_id', '=', record.articulos_id.id),
+                    ('id', 'not in', existing_component_ids)
+                ])
+                
+# Agregar los nuevos componentes sin eliminar los existentes
+                if components:
+                    record.write({
+                        'componentes_ids': [(4, component.id) for component in components]
+                    })
 
     def next_button(self):
         return {'type': 'ir.actions.act_window', 'name': 'Copia Ficha Tecnica', 'res_model': 'copia.ficha.tecnica.wizard', 'view_mode': 'form', 'target': 'new',}
         
     def unlink(self):
+        """
+        Funcion que valida que no se pueda eliminar una ficha tecnica en estado 'Done'.
+        """
         for record in self:
             if record.state == 'done':
                 raise exceptions.UserError("No se puede eliminar una Ficha Técnica en estado 'Done'.")

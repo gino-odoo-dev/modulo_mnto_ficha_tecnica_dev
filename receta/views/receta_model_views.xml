@@ -25,26 +25,29 @@
                                     <field name="temporadas_id" class="field"/>
                                     <field name="articulos_id" class="field"/>
                                     <field name="state" invisible="1" class="field"/>
+                                    <button name="link_components" string="Actualizar" type="object" class="btn-primary btn-update" invisible="not articulos_id"/>
                                 </group>
                             </div>
                             <div class="col-lg-6 col-md-6">
                                 <group string="Copia Ficha Tecnica">
-                                    <field name="copia_temporadas" class="field" readonly="1"/>
+                                    <field name="copia_temporadas" class="field" readonly="1" force_save="1"/>
                                     <field name="part_o" string="Artículo Origen" class="field"/>
                                     <field name="m_numero_color" class="field"/>
                                     <field name="part_d" string="Artículo Destino" class="field"/>
-                                    <button name="next_button" string="Siguiente" type="object" class="btn-primary"/>
+                                    <button name="next_button" string="Duplicar" type="object" class="btn-primary btn-next-update"/>
                                 </group>
                             </div>
                         </div>
                         <notebook>
                             <page string="Componentes">
                                 <field name="componentes_ids">
-                                    <tree editable="bottom">
+                                    <tree editable="bottom" create="true" delete="true">
+                                        <field name="articulo_id" invisible="1"/>
                                         <field name="codigosecuencia_id"/>
                                         <field name="componente_id" widget="many2one"/>
-                                        <field name="descripcion" readonly="1"/>
-                                        <field name="umedida" readonly="1"/>
+                                        <field name="name" string="Nombre Componente"/>
+                                        <field name="descripcion"/>
+                                        <field name="umedida"/>
                                         <field name="compra_manufactura_id"/>
                                         <field name="cantidad_id"/>
                                         <field name="factor_perdida_id"/>

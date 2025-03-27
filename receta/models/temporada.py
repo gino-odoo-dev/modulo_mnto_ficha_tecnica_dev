@@ -6,4 +6,6 @@ class Temporada(models.Model):
 
     name = fields.Char(string="Nombre", required=True)
     description = fields.Text(string="Descripción")
-    company_id = fields.Many2one('res.company', string="Compañía", default=lambda self: self.env.company)  # Added field
+    company_id = fields.Many2one('res.company', string="Compañía", default=lambda self: self.env.company)
+    code = fields.Char(string='codigo Temporada')
+    active = fields.Boolean(string='Activo', default=True)  

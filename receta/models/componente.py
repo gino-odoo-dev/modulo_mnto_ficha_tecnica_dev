@@ -7,7 +7,7 @@ class Componente(models.Model):
 
     name = fields.Char(string="Nombre", required=False)
     descripcion = fields.Char(string="Descripcion")  
-    umedida = fields.Char(string="Unidad de Medida") 
+    umedida = fields.Char(string="Unidad de Medida")
     componente_id = fields.Many2one('cl.product.componente', string='Componente Relacionado')  
 
     ficha_tecnica_id = fields.Many2one('receta.fichatecnica', string='Ficha Técnica')
@@ -20,6 +20,7 @@ class Componente(models.Model):
     costo_ampliado_id = fields.Float(string='Costo Ampliado', compute='_compute_costo_ampliado', store=True) 
     departamento_id = fields.Many2one('cl.departamento', string='Departamento')
     departamento_name = fields.Char(string='Nombre del Departamento', related='departamento_id.name', store=True)
+    articulo_id = fields.Many2one('cl.product.articulo', string='Artículo', required=True, ondelete='cascade')
 
     @api.depends('cantidad_id', 'costo_unitario_id', 'factor_perdida_id')
     def _compute_costo_ampliado(self):
@@ -39,14 +40,12 @@ class Componente(models.Model):
 
     @api.model
     def create(self, vals):
-        if 'componente_id' in vals:
-            componente = self.env['cl.product.componente'].browse(vals['componente_id'])
-            vals['name'] = vals.get('name', componente.name or '')
-            vals['descripcion'] = vals.get('descripcion', componente.descripcion or '')
-            vals['umedida'] = vals.get('umedida', componente.umedida or '')
-        else:
-            vals['name'] = vals.get('name', '')
-            vals['descripcion'] = vals.get('descripcion', '')
-            vals['umedida'] = vals.get('umedida', '')
+        # Asegurar que el artículo se asigne automáticamente si viene de una ficha técnica
+        if 'ficha_tecnica_id' in vals and 'articulo_id' not in vals:
+            ficha = self.env['receta.fichatecnica'].browse(vals['ficha_tecnica_id'])
+            if ficha.articulos_id:
+                vals['articulo_id'] = ficha.articulos_id.id
+        
+        # Resto de la lógica existente...
         return super(Componente, self).create(vals)
 
