@@ -9,10 +9,9 @@ from . import factorperdida
 from . import fichatecnica
 from . import secuencia
 from . import temporada
-from . import copia_ficha_tecnica_wizard
 from . import marca
 from . import correlativo
 from . import categoria
 from . import subcategoria
 from . import color
-from . import talla
+from . import tallas

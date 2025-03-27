@@ -7,7 +7,6 @@
     'depends': ['base', 'mrp', 'product'],
     'data': [
         'views/receta_model_views.xml',
-        'views/copia_ficha_tecnica_wizard_view.xml',
         'security/ir.model.access.csv',
     ],
     'assets': {

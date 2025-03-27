@@ -7,3 +7,4 @@ class Departamento(models.Model):
     name = fields.Char(string="Nombre", required=True)
     description = fields.Text(string="Descripción")
     codigo = fields.Char(string="Código", required=True) 
+
