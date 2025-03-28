@@ -25,7 +25,7 @@
                                     <field name="temporadas_id" class="field"/>
                                     <field name="articulos_id" class="field"/>
                                     <field name="state" invisible="1" class="field"/>
-                                    <button name="link_components" string="Actualizar" type="object" class="btn-primary btn-update" invisible="not articulos_id"/>
+                                    <button name="process_all" string="Actualizar" type="object" class="btn-primary btn-update" invisible="not articulos_id"/>
                                 </group>
                             </div>
                             <div class="col-lg-6 col-md-6">
@@ -34,7 +34,7 @@
                                     <field name="part_o" string="Artículo Origen" class="field"/>
                                     <field name="m_numero_color" class="field"/>
                                     <field name="part_d" string="Artículo Destino" class="field"/>
-                                    <button name="next_button" string="Duplicar" type="object" class="btn-primary btn-next-update"/>
+                                    <button name="next_button" string="Duplicar" type="object" class="btn-primary btn-next-update" invisible="not articulos_id"/>
                                 </group>
                             </div>
                         </div>
