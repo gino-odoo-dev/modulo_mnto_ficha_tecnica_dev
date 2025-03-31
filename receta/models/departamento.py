@@ -5,6 +5,6 @@ class Departamento(models.Model):
     _description = 'Departamento'
 
     name = fields.Char(string="Nombre", required=True)
-    description = fields.Text(string="Descripción")
-    codigo = fields.Char(string="Código", required=True) 
+    description = fields.Text(string="Descripcion")
+    codigo = fields.Char(string="Codigo", required=True) 
 

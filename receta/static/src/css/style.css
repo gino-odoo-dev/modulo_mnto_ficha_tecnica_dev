@@ -22,10 +22,15 @@
     font-weight: normal !important;
 }
 
-.btn-update {
-    margin-top: 110px;
-}
-
 .btn-next-update {
     margin-top: 2px !important;
+}
+
+.btn-update {
+    margin-top: 7px !important;
+    margin-bottom: 5px !important;
+}
+
+.field {
+    width: 300px !important;
 }

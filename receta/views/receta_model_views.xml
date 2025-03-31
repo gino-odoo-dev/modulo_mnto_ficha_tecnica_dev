@@ -9,6 +9,7 @@
                     <field name="temporadas_id"/>
                     <field name="articulos_id"/>
                     <button name="unlink" type="object" string="Eliminar" class="btn-danger"/>
+                    <button name="success_action" type="object" string="Success" class="btn-success"/>
                 </tree>
             </field>
         </record>
@@ -22,19 +23,11 @@
                         <div class="row">
                             <div class="col-lg-6 col-md-6">
                                 <group string="Ficha Tecnica">
-                                    <field name="temporadas_id" class="field"/>
+                                    <field name="temporadas_id" class="field" style="width: 15px;"/>
                                     <field name="articulos_id" class="field"/>
+                                    <field name="inicio_name"/>
+                                    <field name="fin_name"/>
                                     <field name="state" invisible="1" class="field"/>
-                                    <button name="process_all" string="Actualizar" type="object" class="btn-primary btn-update" invisible="not articulos_id"/>
-                                </group>
-                            </div>
-                            <div class="col-lg-6 col-md-6">
-                                <group string="Copia Ficha Tecnica">
-                                    <field name="copia_temporadas" class="field" readonly="1" force_save="1"/>
-                                    <field name="part_o" string="Artículo Origen" class="field"/>
-                                    <field name="m_numero_color" class="field"/>
-                                    <field name="part_d" string="Artículo Destino" class="field"/>
-                                    <button name="next_button" string="Duplicar" type="object" class="btn-primary btn-next-update" invisible="not articulos_id"/>
                                 </group>
                             </div>
                         </div>
@@ -42,23 +35,34 @@
                             <page string="Componentes">
                                 <field name="componentes_ids">
                                     <tree editable="bottom" create="true" delete="true">
-                                        <field name="articulo_id" invisible="1"/>
-                                        <field name="codigosecuencia_id"/>
-                                        <field name="componente_id" widget="many2one"/>
-                                        <field name="name" string="Nombre Componente"/>
-                                        <field name="descripcion"/>
-                                        <field name="umedida"/>
-                                        <field name="compra_manufactura_id"/>
-                                        <field name="cantidad_id"/>
-                                        <field name="factor_perdida_id"/>
-                                        <field name="costo_unitario_id"/>
-                                        <field name="costo_ampliado_id"/>
-                                        <field name="departamento_id"/>
+                                        <field name="articulo_id" class="field" options="{'always_reload': True}"/>
+                                        <field name="codigosecuencia_id" options="{'no_create': True}"/>
+                                        <field name="componente_id" widget="many2one" options="{'no_create': False}"/>
+                                        <field name="name" string="Nombre Componente" readonly="0"/>
+                                        <field name="descripcion" readonly="0"/>
+                                        <field name="umedida" readonly="0"/>
+                                        <field name="compra_manufactura_id" readonly="0"/>
+                                        <field name="cantidad_id" readonly="0"/>
+                                        <field name="factor_perdida_id" readonly="0"/>
+                                        <field name="costo_unitario_id" readonly="0"/>
+                                        <field name="costo_ampliado_id" readonly="0"/>
+                                        <field name="departamento_id" readonly="0"/>
                                     </tree>
                                 </field>
                             </page>
+                            <page string="Copia Ficha Tecnica">
+                                <group>
+                                    <field name="part_o" string="Articulo Origen" class="field"/>
+                                    <field name="m_numero_color" class="field"/>
+                                    <field name="numero_inicio_id" string="Numero Inicio" class="field"/>
+                                    <field name="numero_fin_id" string="Numero Fin" class="field"/>
+                                    <field name="part_d" string="Articulo Destino" class="field"/>
+                                    <button name="next_button" string="Duplicar" type="object" class="btn-primary btn-next-update" invisible="not articulos_id"/>
+                                </group>
+                            </page>
                         </notebook>
                     </sheet>
+
                 </form>
             </field>
         </record>

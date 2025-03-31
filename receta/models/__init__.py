@@ -14,4 +14,5 @@ from . import correlativo
 from . import categoria
 from . import subcategoria
 from . import color
-from . import tallas
+from . import talla
+from . import numeracion

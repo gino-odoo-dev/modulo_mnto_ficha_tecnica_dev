@@ -20,7 +20,7 @@ class Componente(models.Model):
     costo_ampliado_id = fields.Float(string='Costo Ampliado', compute='_compute_costo_ampliado', store=True) 
     departamento_id = fields.Many2one('cl.departamento', string='Departamento')
     departamento_name = fields.Char(string='Nombre del Departamento', related='departamento_id.name', store=True)
-    articulo_id = fields.Many2one('cl.product.articulo', string='Artículo', required=True, ondelete='cascade')
+    articulo_id = fields.Many2one('cl.product.articulo', string='Artículo', required=False, ondelete='cascade')
 
     @api.depends('cantidad_id', 'costo_unitario_id', 'factor_perdida_id')
     def _compute_costo_ampliado(self):

@@ -16,6 +16,8 @@ receta/
 │       └── css/
 │           └── style.css/
 │
+├── tree.txt
+│
 └── models/
     ├── __init__.py
     └── articulo.py
@@ -35,22 +37,4 @@ receta/
     └── subcategoria.py
     └── talla.py
     └── color.py
-
-exft_orden
-exft_padre
-exft_nivel
-exft_sec
-exft_comp
-exft_desc_comp
-exft_cant
-exft_factor
-exft_um
-exft_subcat
-exft_desc_subcat
-exft_pm 
-exft_costo 
-exft_amp_costo 
-exft_depto
-exft_desc_depto 
-exft_temporada
-exft_userid
+    └── numeracion.py

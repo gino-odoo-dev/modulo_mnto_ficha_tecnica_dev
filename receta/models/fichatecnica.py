@@ -1,5 +1,8 @@
 from odoo import models, fields, api, exceptions
 from odoo.exceptions import ValidationError
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class FichaTecnica(models.Model):
     _name = 'receta.fichatecnica'
@@ -7,16 +10,21 @@ class FichaTecnica(models.Model):
     _rec_name = "nombre_ficha"
 
 # campos ficha tecnica 
-    temporadas_id = fields.Many2one('cl.product.temporada', string='Temporada') 
-    articulos_id = fields.Many2one('cl.product.articulo', string='Artículo')  
+    fin_name = fields.Char(string="Nombre fin") 
+    inicio_name = fields.Char(string="Nombre Inicio") 
+    temporadas_id = fields.Many2one('cl.product.temporada', string='Temporada', store=True) 
+    articulos_id = fields.Many2one('cl.product.articulo', string='Articulo', store=True)  
+    numero_inicio_id = fields.Many2one('cl.product.numeraciones', string='Numero Inicio')
+    numero_fin_id = fields.Many2one('cl.product.numeraciones', string='Numero Fin')
+
     state = fields.Selection([('draft', 'Draft'), ('progress', 'Progress'), ('done', 'Done')], string='State', default='progress') 
     componentes_ids = fields.One2many('cl.product.componente', 'ficha_tecnica_id', string='Componentes')  
     nombre_ficha = fields.Char(string='Nombre de Ficha Tecnica', compute='_compute_nombre_ficha', store=True, readonly=True, default="Sin Nombre")
-
+    
 # campos copia ficha tecnica
     part_o = fields.Many2one('cl.product.articulo', string='Articulo Origen', required=False) 
     part_d = fields.Many2one('cl.product.articulo', string='Articulo Destino', required=False)
-    m_numero_color = fields.Boolean(string="Copiar Numeraciones/Ficha Tecnica", default=True)  
+    m_numero_color = fields.Boolean(string="Copiar Nº", default=True)  
     copia_temporadas = fields.Many2one('cl.product.temporada', string='Temporada', default=False, readonly=True) 
     
     copia = fields.Boolean(string="Copia")
@@ -32,16 +40,6 @@ class FichaTecnica(models.Model):
     mensaje = fields.Char(string="Mensaje", readonly=True)
     xcuero = fields.Char(string="Cuero", size=3)
 
-    @api.depends('temporadas_id')
-    def _compute_temporada_name(self):
-        for record in self:
-            record.temporada_name = record.temporadas_id.name
-
-    @api.depends('articulos_id')
-    def _compute_articulo_name(self):
-        for record in self:
-            record.articulo_name = record.articulos_id.name
-
     @api.depends('articulos_id')
     def _compute_nombre_ficha(self):
         for record in self:
@@ -52,16 +50,76 @@ class FichaTecnica(models.Model):
         for record in self:
             record.copia_temporadas = record.temporadas_id
 
+    @api.onchange('articulos_id')
+    def _onchange_articulos_id(self):
+        for record in self:
+            # Mensaje de advertencia si no hay temporada
+            if record.articulos_id and not record.temporadas_id:
+                return {
+                    'warning': {
+                        'title': "Temporada requerida",
+                        'message': "Debe seleccionar una temporada antes de actualizar los componentes",
+                    }
+                }
+            
+            # Actualizar componentes automáticamente si hay artículo
+            if record.articulos_id:
+                # Usar link_components para mantener la lógica consistente
+                record.with_context(skip_write=True).link_components()
+                return {
+                    'domain': {'componentes_ids': [('articulo_id', '=', record.articulos_id.id)]}
+                }
+
     @api.model
     def create(self, vals):
+        # Validación: Verificar que se haya seleccionado una temporada
+        if 'temporadas_id' not in vals or not vals['temporadas_id']:
+            raise ValidationError("Debe seleccionar una temporada antes de crear una ficha técnica.")
+
+        # Validación: Verificar que se haya seleccionado un artículo
+        if 'articulos_id' not in vals or not vals['articulos_id']:
+            raise ValidationError("Debe seleccionar un artículo antes de crear una ficha técnica.")
+
+        # Permitir la creación de múltiples fichas técnicas para el mismo artículo y temporada
+        # Se puede agregar un mensaje de advertencia en el log si es necesario
+        existing = self.env['receta.fichatecnica'].search([
+            ('temporadas_id', '=', vals['temporadas_id']),
+            ('articulos_id', '=', vals['articulos_id'])
+        ])
+        if existing:
+            _logger.warning(f"Creando una nueva ficha técnica para el artículo {vals['articulos_id']} y temporada {vals['temporadas_id']}, aunque ya existe otra ficha técnica.")
+
+        # Llamar al método original
         ficha_tecnica = super(FichaTecnica, self).create(vals)
         ficha_tecnica.with_context(skip_link_components=True).link_components()
         return ficha_tecnica
 
     def write(self, vals):
-        """
-        Funcion se sobrescribe con funcikon link_components para cada articulo y se pueda reflejar en la lista.
-        """
+        # Validación: No permitir cambiar la temporada si ya hay componentes asociados
+        if 'temporadas_id' in vals:
+            for record in self:
+                if record.componentes_ids:
+                    raise ValidationError("No puede cambiar la temporada si ya hay componentes asociados.")
+
+        # Validación: No permitir cambiar el artículo si ya hay componentes asociados
+        if 'articulos_id' in vals:
+            for record in self:
+                if record.componentes_ids:
+                    raise ValidationError("No puede cambiar el artículo si ya hay componentes asociados.")
+
+        # Validación: Evitar duplicados de artículo y temporada
+        if 'temporadas_id' in vals or 'articulos_id' in vals:
+            temporadas_id = vals.get('temporadas_id', self.temporadas_id.id)
+            articulos_id = vals.get('articulos_id', self.articulos_id.id)
+            existing = self.env['receta.fichatecnica'].search([
+                ('id', '!=', self.id),
+                ('temporadas_id', '=', temporadas_id),
+                ('articulos_id', '=', articulos_id)
+            ])
+            if existing:
+                raise ValidationError("Ya existe una ficha técnica para este artículo y temporada.")
+
+        # Llamar al método original
         result = super(FichaTecnica, self).write(vals)
         if not self.env.context.get('skip_link_components'):
             self.with_context(skip_link_components=True).link_components()
@@ -69,6 +127,9 @@ class FichaTecnica(models.Model):
     
     def next_button(self):
         return {'type': 'ir.actions.act_window', 'name': 'Copia Ficha Tecnica', 'res_model': 'copia.ficha.tecnica.wizard', 'view_mode': 'form', 'target': 'new',}
+
+    def success_action(self):
+        pass
 
     def unlink(self):
         """
@@ -80,38 +141,51 @@ class FichaTecnica(models.Model):
         return super(FichaTecnica, self).unlink()
     
     def link_components(self):
-        """
-        Función que agrega componentes a la ficha técnica (sin validar SKU si no existe).
-        """
         for record in self:
-            if record.articulos_id:
-# Solo agregar componentes (sin validar SKU si no es necesario)
-                existing_component_ids = record.componentes_ids.ids
-                components = self.env['cl.product.componente'].search([
-                    ('articulo_id', '=', record.articulos_id.id),
-                    ('id', 'not in', existing_component_ids)
-                ])
-                
-                if components:
-                    record.write({
-                        'componentes_ids': [(4, component.id) for component in components]
-                    })
-        
+            if not record.articulos_id:
+                continue  
+            components = self.env['cl.product.componente'].search([
+                ('articulo_id', '=', record.articulos_id.id)
+            ])
+            # Reemplazar todos los componentes
+            record.componentes_ids = [(6, 0, components.ids)]
+            if not self.env.context.get('skip_write') and not record.articulos_id.codigo:
+                record.articulos_id.codigo = f"SKU-{record.id:06d}"
+
     def estructura_sku(self):
         """
         Valida y descompone el SKU solo si cumple con los requisitos.
         """
         if not self.articulos_id:
-            raise ValidationError("Debe seleccionar un artículo.")
+            raise ValidationError("Debe seleccionar un articulo.")
         
-# Verificar si el artículo tiene un SKU válido
-        if not self.articulos_id.codigo:
-            raise ValidationError("El artículo no tiene un SKU asignado.")
+        # Verificar si el artículo tiene un SKU asignado
+        if not self.articulos_id.name:
+            raise ValidationError(f"El artículo '{self.articulos_id.name}' no tiene un SKU asignado.")
         
-        if len(self.articulos_id.codigo) != 18:
+        if len(self.articulos_id.name) != 18:
             raise ValidationError("El SKU debe tener exactamente 18 caracteres.")
 
-        sku = self.articulos_id.codigo
+        sku = self.articulos_id.name
+
+        # Validar que el nombre del SKU esté bien formado
+        mappings = [
+            ('marca_name', 'cl.product.marca', sku[:2]),
+            ('genero_name', 'cl.product.genero', sku[2]),
+            ('correlativo_name', 'cl.product.correlativo', sku[3:7]),
+            ('categoria_name', 'cl.product.categoria', sku[7]),
+            ('subcategoria_name', 'cl.product.subcategoria', sku[8:10]),
+            ('temporada_name', 'cl.product.temporada', sku[10]),
+            ('material_name', 'cl.product.material', sku[11:13]),
+            ('color_name', 'cl.product.color', sku[13:15]),
+            ('tallas_name', 'cl.product.tallas', sku[15:18]),
+        ]
+
+        for field_name, _, value in mappings:
+            if not value:
+                raise ValidationError(f"El campo '{field_name}' no está bien formado en el SKU.")
+        
+        self.mensaje = "El SKU está correctamente formado."
 
 # Mapeo de campos y modelos para extraer el SKU
         mappings = [
@@ -129,17 +203,9 @@ class FichaTecnica(models.Model):
         for field_name, model_name, code in mappings:
             record_found = self.env[model_name].search([("codigo", '=', code)], limit=1)
             if not record_found:
-                raise ValidationError(f"No se encontró registro para el código: {code}.")
+                raise ValidationError(f"No se encontro registro para el codigo: {code}.")
             self.write({field_name: record_found.name})
 
-    def process_all(self):
-        """
-        Ejecuta validación de SKU y agregado de componentes.
-        """
-        if self.articulos_id and self.articulos_id.codigo:
-            self.estructura_sku()
-        self.link_components()
- 
     def copia_rec_dev(self):
         """
         Funcion principal que realiza las validaciones y copia de recetas.
