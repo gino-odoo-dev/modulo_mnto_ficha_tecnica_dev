@@ -7,72 +7,91 @@ Copia de Ficha tecnica dependiendo de temporada, disponibilidad y disponibilidad
 
 ## Modelos 
 
-### `mrp.bom`
+### `receta.fichatecnica`
 - Fields:
-  - `name` (Char)
+  - `fin_name` (Char)
+  - `inicio_name` (Char)
   - `temporadas_id` (Many2one)
-  - `temporada_name` (Char)
   - `articulos_id` (Many2one)
-  - `articulo_name` (Char)
-  - `codigo_departamento` (Char)
-  - `descripcion_componente` (Text)
-  - `unidadmedida_componente` (Char)
-  - `descripcion_departamento` (Text)
-  - `cantidad_id` (Integer)
-  - `costo_unitarrio_id` (Float)
-  - `costo_ampliado_id` (Float)
-  - `componente_id` (Many2one)
-  - `departamento_id` (Many2one)
-  - `factor_perdida_id` (Float)
-  - `codigosecuencia_id` (Many2one)
-  - `compra_manufactura_id` (Many2one)
-
-### `copia.ficha`
-- Fields:
-  - `temporadas_id` (Many2one)
-  - `temporada_name` (Char)
-  - `nombre_receta` (Char)
+  - `numero_inicio_id` (Many2one)
+  - `numero_fin_id` (Many2one)
+  - `state` (Selection)
+  - `componentes_ids` (Many2one)
+  - `nombre_ficha` (Char)
   - `part_o` (Many2one)
   - `part_d` (Many2one)
   - `m_numero_color` (Boolean)
+  - `copia_temporadas` (Many2one)
   - `copia` (Boolean)
   - `m_modelo_o` (Char)
   - `m_modelo_d` (Char)
-  - `no_comb_o` (Char)
-  - `no_comb_d` (Char)
-  - `remplaza` (Char)
+  - `no_combo_d` (Char)
+  - `x_cuero` (Char)
+  - `x_color` (Char)
+  - `x_plnta` (Char)
+  - `x_colfo` (Char)
+  - `sequence` (Integer)
   - `mensaje` (Char)
   - `xcuero` (Char)
-  - `xcolor` (Char)
-  - `xplnta` (Char)
-  - `xcolfo` (Char)
-  - `sequence` (Integer)
+
+
+### `cl.product.componente`
+- Fields:
+  - `name` (Char)
+  - `descripcion` (Char)
+  - `umedida` (Char)
+  - `componente_id` (Many2one)
+  - `ficha_tecnica_id` (Many2one)
+  - `codigosecuencia_id` (Many2one)
+  - `compra_manufactura_id` (Many2one)
+  - `compra_manufactura_name` (Char)
+  - `cantidad_id` (Inteeger)
+  - `factor_perdida_id` (float)
+  - `costo_unitario_id` (Float)
+  - `costo_ampliado_id` (Float)
+  - `departamento_id` (Many2one)
+  - `departamento_name` (Char)
+  - `articulo_id` (Many2one)
+
+
+### `copia.receta.fichatecnica`
+- Fields:
+
+
 _________________________________________________
 
 ### `Funciones Ficha Tecnica`
 
-  - `name_get` ()
-  - `_compute_temporada_name` ()
-  - `_compute_articulo_name` ()
-  - `calcular_costo_ampliado` ()
-  - `_onchange_componente_id` ()
-  - `next_button` ()
-
-
-### `Funciones Copia Fich Tecnica`
-
-  - `_compute_nombre_receta` ()
-  - `_compute_temporada_name` ()
-  - `_check_fields` ()
+  - `_compute_nombre_ficha_` ()
+  - `_onchange_temporadas_id` ()
+  - `_onchange_articulos_id` ()
+  - `create` ()
+  - `write` ()
+  - `success_action` ()
+  - `unlink` ()
+  - `link_components` ()
+  - `estructura_sku` ()
   - `copia_rec_dev` ()
   - `obtener_numero_combinaciones` ()
-  - `_copia_numero` ()
+  - `copia_numero` ()
   - `_cambia_componente` ()
   - `_crea_ficha_comp` ()
   - `_copia_color` ()
   - `_cambia_materia` ()
   - `_determinar_nuevo_componente` ()
-  - `eliminar_registro` ()
+  - `next_button` ()
+
+
+### `Funciones componente`
+
+  - `_compute_costo_ampliado` ()
+  - `_onchange_componentes_ids` ()
+  - `create` ()
+
+
+### `Funciones copia fichatecnica`
+
+  - `close_wizard` ()
 
 _________________________________________________
 
