@@ -125,9 +125,6 @@ class FichaTecnica(models.Model):
             self.with_context(skip_link_components=True).link_components()
         return result
     
-    def next_button(self):
-        return {'type': 'ir.actions.act_window', 'name': 'Copia Ficha Tecnica', 'res_model': 'copia.ficha.tecnica.wizard', 'view_mode': 'form', 'target': 'new',}
-
     def success_action(self):
         pass
 
@@ -280,15 +277,15 @@ class FichaTecnica(models.Model):
                 self._cambia_materia(self.part_o, self.m_modelo_o, self.part_d, self.m_modelo_d)
                 self._cambia_componente(self.part_o, self.m_modelo_o, self.part_d, self.m_modelo_d)
 
-            self.mensaje = "Proceso de copia completado correctamente."
+            mensaje_final = "Proceso de copia completado correctamente."
+            self.write({'mensaje': mensaje_final})
+            return True
         except ValidationError as e:
-            self.mensaje = f"Error de validación: {str(e)}"
-            self.env.cr.rollback()  # Detener la operacion
-            return 
+            self.write({'mensaje': f"Error de validación: {str(e)}"})
+            return False
         except Exception as e:
-            self.mensaje = f"Error inesperado: {str(e)}"
-            self.env.cr.rollback()  # Detener la operacion
-            return 
+            self.write({'mensaje': f"Error inesperado: {str(e)}"})
+            return False
 
     def obtener_numero_combinaciones(self, codigo_articulo):
         """
@@ -712,3 +709,45 @@ class FichaTecnica(models.Model):
             return f"PT-NUEVO-{pt_record.pt_part[3:]}"
 # Si no se encuentra un nuevo componente, devolver None.
         return None
+    
+    def next_button(self):
+    # Ejecutar la función de copia
+        try:
+            self.copia_rec_dev()
+            
+            # Crear registro en el wizard
+            wizard = self.env['copia.receta.fichatecnica'].create({
+                'mensaje': self.mensaje or "Proceso completado",
+                'ficha_tecnica_id': self.id,
+                'detalles': f"Copia realizada de {self.part_o} a {self.part_d}",
+                'exitoso': True if "correctamente" in (self.mensaje or "") else False
+            })
+            
+            # Retornar acción para mostrar el wizard
+            return {
+                'name': 'Resultado de Copia',
+                'type': 'ir.actions.act_window',
+                'res_model': 'copia.receta.fichatecnica',
+                'res_id': wizard.id,
+                'view_mode': 'form',
+                'target': 'new',
+                'context': self.env.context
+            }
+        except Exception as e:
+            # Manejo de errores
+            wizard = self.env['copia.receta.fichatecnica'].create({
+                'mensaje': f"Error: {str(e)}",
+                'ficha_tecnica_id': self.id,
+                'detalles': "Error durante el proceso de copia",
+                'exitoso': False
+            })
+            return {
+                'name': 'Error en Copia',
+                'type': 'ir.actions.act_window',
+                'res_model': 'copia.receta.fichatecnica',
+                'res_id': wizard.id,
+                'view_mode': 'form',
+                'target': 'new',
+                'context': self.env.context
+            }
+

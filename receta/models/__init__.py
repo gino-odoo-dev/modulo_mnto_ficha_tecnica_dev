@@ -16,3 +16,4 @@ from . import subcategoria
 from . import color
 from . import talla
 from . import numeracion
+from . import copiaficha

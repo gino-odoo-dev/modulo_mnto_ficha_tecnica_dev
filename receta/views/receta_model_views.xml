@@ -1,24 +1,26 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <data>
+        <!-- Vista Tree -->
         <record id="receta_fichatecnica_view_tree" model="ir.ui.view">
             <field name="name">receta.fichatecnica.view.tree</field>
             <field name="model">receta.fichatecnica</field>
             <field name="arch" type="xml">
-                <tree string="Ficha Tecnica" editable="bottom" delete="true">
+                <tree string="Ficha Tecnica" editable="bottom">
                     <field name="temporadas_id"/>
                     <field name="articulos_id"/>
-                    <button name="unlink" type="object" string="Eliminar" class="btn-danger"/>
-                    <button name="success_action" type="object" string="Success" class="btn-success"/>
+                    <button name="unlink" string="Eliminar" type="object" class="btn-danger"/>
                 </tree>
             </field>
         </record>
+
+        <!-- Vista Form -->
         <record id="receta_fichatecnica_view_form" model="ir.ui.view">
             <field name="name">receta.fichatecnica.view.form</field>
             <field name="model">receta.fichatecnica</field>
             <field name="priority">10</field>
             <field name="arch" type="xml">
-                <form string="Ficha Tecnica">
+                <form string="Ficha Tecnica" create="1" edit="1" delete="1">
                     <sheet>
                         <div class="row">
                             <div class="col-lg-6 col-md-6">
@@ -31,25 +33,27 @@
                                 </group>
                             </div>
                         </div>
+                        
                         <notebook>
                             <page string="Componentes">
                                 <field name="componentes_ids">
-                                    <tree editable="bottom" create="true" delete="true">
+                                    <tree editable="bottom" create="1" delete="1">
                                         <field name="articulo_id" class="field" options="{'always_reload': True}"/>
                                         <field name="codigosecuencia_id" options="{'no_create': True}"/>
                                         <field name="componente_id" widget="many2one" options="{'no_create': False}"/>
-                                        <field name="name" string="Nombre Componente" readonly="0"/>
-                                        <field name="descripcion" readonly="0"/>
-                                        <field name="umedida" readonly="0"/>
-                                        <field name="compra_manufactura_id" readonly="0"/>
-                                        <field name="cantidad_id" readonly="0"/>
-                                        <field name="factor_perdida_id" readonly="0"/>
-                                        <field name="costo_unitario_id" readonly="0"/>
-                                        <field name="costo_ampliado_id" readonly="0"/>
-                                        <field name="departamento_id" readonly="0"/>
+                                        <field name="name" string="Nombre Componente"/>
+                                        <field name="descripcion"/>
+                                        <field name="umedida"/>
+                                        <field name="compra_manufactura_id"/>
+                                        <field name="cantidad_id"/>
+                                        <field name="factor_perdida_id"/>
+                                        <field name="costo_unitario_id"/>
+                                        <field name="costo_ampliado_id"/>
+                                        <field name="departamento_id"/>
                                     </tree>
                                 </field>
                             </page>
+                            
                             <page string="Copia Ficha Tecnica">
                                 <group>
                                     <field name="part_o" string="Articulo Origen" class="field"/>
@@ -62,17 +66,46 @@
                             </page>
                         </notebook>
                     </sheet>
-
                 </form>
             </field>
         </record>
-        <record id="action_receta_fichatecnica" model="ir.actions.act_window">
-            <field name="type">ir.actions.act_window</field>
-            <field name="name">Ficha Técnica</field>
-            <field name="res_model">receta.fichatecnica</field>
-            <field name="view_mode">form,tree</field>
+
+        <!-- Wizard View -->
+        <record id="view_copia_ficha_tecnica_wizard_form" model="ir.ui.view">
+            <field name="name">copia.ficha.tecnica.wizard.form</field>
+            <field name="model">copia.receta.fichatecnica</field>
+            <field name="arch" type="xml">
+                <form string="Resultado De La Operacion">
+                    <sheet>
+                        <group>
+                            <field name="ficha_tecnica_id" readonly="1"/>
+                            <field name="exitoso" readonly="1"/>
+                            <field name="mensaje" readonly="1"/>
+                            <field name="detalles" readonly="1"/>
+                        </group>
+                        <footer>
+                            <button name="close_wizard" string="Cerrar" type="object" class="btn-primary"/>
+                        </footer>
+                    </sheet>
+                </form>
+            </field>
         </record>
 
+        <!-- Actions -->
+        <record id="action_copia_ficha_tecnica_wizard" model="ir.actions.act_window">
+            <field name="name">Resultado de Copia</field>
+            <field name="res_model">copia.receta.fichatecnica</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+        <record id="action_receta_fichatecnica" model="ir.actions.act_window">
+            <field name="name">Ficha Técnica</field>
+            <field name="res_model">receta.fichatecnica</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <!-- Menú -->
         <menuitem id="menu_receta_fichatecnica" name="Ficha Productos" parent="mrp.menu_mrp_root" action="action_receta_fichatecnica" sequence="10"/>
     </data>
 </odoo>
