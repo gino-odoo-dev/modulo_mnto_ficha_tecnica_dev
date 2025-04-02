@@ -27,8 +27,6 @@
                                 <group string="Ficha Tecnica">
                                     <field name="temporadas_id" class="field" style="width: 15px;"/>
                                     <field name="articulos_id" class="field"/>
-                                    <field name="inicio_name"/>
-                                    <field name="fin_name"/>
                                     <field name="state" invisible="1" class="field"/>
                                 </group>
                             </div>
@@ -57,9 +55,8 @@
                             <page string="Copia Ficha Tecnica">
                                 <group>
                                     <field name="part_o" string="Articulo Origen" class="field"/>
-                                    <field name="m_numero_color" class="field"/>
-                                    <field name="numero_inicio_id" string="Numero Inicio" class="field"/>
-                                    <field name="numero_fin_id" string="Numero Fin" class="field"/>
+                                    <field name="m_numero_color" class="field"/>                                    
+                                    <field name="numero" string="Numero Talla" class="field"/>
                                     <field name="part_d" string="Articulo Destino" class="field"/>
                                     <button name="next_button" string="Duplicar" type="object" class="btn-primary btn-next-update" invisible="not articulos_id"/>
                                 </group>
@@ -102,7 +99,7 @@
         <record id="action_receta_fichatecnica" model="ir.actions.act_window">
             <field name="name">Ficha Técnica</field>
             <field name="res_model">receta.fichatecnica</field>
-            <field name="view_mode">tree,form</field>
+            <field name="view_mode">form</field>
         </record>
 
         <!-- Menú -->

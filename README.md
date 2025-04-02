@@ -13,8 +13,6 @@ Copia de Ficha tecnica dependiendo de temporada, disponibilidad y disponibilidad
   - `inicio_name` (Char)
   - `temporadas_id` (Many2one)
   - `articulos_id` (Many2one)
-  - `numero_inicio_id` (Many2one)
-  - `numero_fin_id` (Many2one)
   - `state` (Selection)
   - `componentes_ids` (Many2one)
   - `nombre_ficha` (Char)
@@ -92,6 +90,11 @@ _________________________________________________
 ### `Funciones copia fichatecnica`
 
   - `close_wizard` ()
+
+
+### `Funciones numeracion`
+
+
 
 _________________________________________________
 

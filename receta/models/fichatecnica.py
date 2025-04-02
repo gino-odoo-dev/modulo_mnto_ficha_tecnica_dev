@@ -10,13 +10,9 @@ class FichaTecnica(models.Model):
     _rec_name = "nombre_ficha"
 
 # campos ficha tecnica 
-    fin_name = fields.Char(string="Nombre fin") 
-    inicio_name = fields.Char(string="Nombre Inicio") 
     temporadas_id = fields.Many2one('cl.product.temporada', string='Temporada', store=True) 
     articulos_id = fields.Many2one('cl.product.articulo', string='Articulo', store=True)  
-    numero_inicio_id = fields.Many2one('cl.product.numeraciones', string='Numero Inicio')
-    numero_fin_id = fields.Many2one('cl.product.numeraciones', string='Numero Fin')
-
+    numero = fields.Many2one('cl.product.numeraciones', string='Numero Talla', required=False)
     state = fields.Selection([('draft', 'Draft'), ('progress', 'Progress'), ('done', 'Done')], string='State', default='progress') 
     componentes_ids = fields.One2many('cl.product.componente', 'ficha_tecnica_id', string='Componentes')  
     nombre_ficha = fields.Char(string='Nombre de Ficha Tecnica', compute='_compute_nombre_ficha', store=True, readonly=True, default="Sin Nombre")
@@ -53,7 +49,7 @@ class FichaTecnica(models.Model):
     @api.onchange('articulos_id')
     def _onchange_articulos_id(self):
         for record in self:
-            # Mensaje de advertencia si no hay temporada
+# Valido si no hay temporada
             if record.articulos_id and not record.temporadas_id:
                 return {
                     'warning': {
@@ -62,52 +58,47 @@ class FichaTecnica(models.Model):
                     }
                 }
             
-            # Actualizar componentes automáticamente si hay artículo
+# Actualizo componentes si hay articulo
             if record.articulos_id:
-                # Usar link_components para mantener la lógica consistente
                 record.with_context(skip_write=True).link_components()
                 return {
                     'domain': {'componentes_ids': [('articulo_id', '=', record.articulos_id.id)]}
                 }
-
+            
     @api.model
     def create(self, vals):
-        # Validación: Verificar que se haya seleccionado una temporada
+# Valida que se haya seleccionado una temporada
         if 'temporadas_id' not in vals or not vals['temporadas_id']:
-            raise ValidationError("Debe seleccionar una temporada antes de crear una ficha técnica.")
-
-        # Validación: Verificar que se haya seleccionado un artículo
+            raise ValidationError("Debe seleccionar una temporada antes de crear una ficha tecnica.")
+# Valida que se haya seleccionado un articulo
         if 'articulos_id' not in vals or not vals['articulos_id']:
-            raise ValidationError("Debe seleccionar un artículo antes de crear una ficha técnica.")
-
-        # Permitir la creación de múltiples fichas técnicas para el mismo artículo y temporada
-        # Se puede agregar un mensaje de advertencia en el log si es necesario
+            raise ValidationError("Debe seleccionar un articulo antes de crear una ficha tecnica.")
+# Permite la creacion de multiples fichas tecnicas para el mismo articulo y temporada
+# Se agregan un mensaje de advertencia en el log si es necesario
         existing = self.env['receta.fichatecnica'].search([
             ('temporadas_id', '=', vals['temporadas_id']),
             ('articulos_id', '=', vals['articulos_id'])
         ])
         if existing:
-            _logger.warning(f"Creando una nueva ficha técnica para el artículo {vals['articulos_id']} y temporada {vals['temporadas_id']}, aunque ya existe otra ficha técnica.")
+            _logger.warning(f"Creando una nueva ficha tecnica para el articulo {vals['articulos_id']} y temporada {vals['temporadas_id']}, aunque ya existe otra ficha tecnica.")
 
-        # Llamar al método original
+# Llamar al metodo original
         ficha_tecnica = super(FichaTecnica, self).create(vals)
         ficha_tecnica.with_context(skip_link_components=True).link_components()
         return ficha_tecnica
 
     def write(self, vals):
-        # Validación: No permitir cambiar la temporada si ya hay componentes asociados
+# Valida cambiar la temporada si ya hay componentes asociados
         if 'temporadas_id' in vals:
             for record in self:
                 if record.componentes_ids:
                     raise ValidationError("No puede cambiar la temporada si ya hay componentes asociados.")
-
-        # Validación: No permitir cambiar el artículo si ya hay componentes asociados
+# Valida el articulo si ya hay componentes asociados
         if 'articulos_id' in vals:
             for record in self:
                 if record.componentes_ids:
                     raise ValidationError("No puede cambiar el artículo si ya hay componentes asociados.")
-
-        # Validación: Evitar duplicados de artículo y temporada
+# Valida articulo y temporada
         if 'temporadas_id' in vals or 'articulos_id' in vals:
             temporadas_id = vals.get('temporadas_id', self.temporadas_id.id)
             articulos_id = vals.get('articulos_id', self.articulos_id.id)
@@ -119,7 +110,7 @@ class FichaTecnica(models.Model):
             if existing:
                 raise ValidationError("Ya existe una ficha técnica para este artículo y temporada.")
 
-        # Llamar al método original
+# Llamar al metodo original
         result = super(FichaTecnica, self).write(vals)
         if not self.env.context.get('skip_link_components'):
             self.with_context(skip_link_components=True).link_components()
@@ -144,7 +135,7 @@ class FichaTecnica(models.Model):
             components = self.env['cl.product.componente'].search([
                 ('articulo_id', '=', record.articulos_id.id)
             ])
-            # Reemplazar todos los componentes
+# Reemplazar todos los componentes
             record.componentes_ids = [(6, 0, components.ids)]
             if not self.env.context.get('skip_write') and not record.articulos_id.codigo:
                 record.articulos_id.codigo = f"SKU-{record.id:06d}"
@@ -156,7 +147,7 @@ class FichaTecnica(models.Model):
         if not self.articulos_id:
             raise ValidationError("Debe seleccionar un articulo.")
         
-        # Verificar si el artículo tiene un SKU asignado
+# Verificar si el artículo tiene un SKU asignado
         if not self.articulos_id.name:
             raise ValidationError(f"El artículo '{self.articulos_id.name}' no tiene un SKU asignado.")
         
@@ -165,7 +156,7 @@ class FichaTecnica(models.Model):
 
         sku = self.articulos_id.name
 
-        # Validar que el nombre del SKU esté bien formado
+# Validar que el nombre del SKU esté bien formado
         mappings = [
             ('marca_name', 'cl.product.marca', sku[:2]),
             ('genero_name', 'cl.product.genero', sku[2]),
