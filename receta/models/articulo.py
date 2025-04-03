@@ -2,7 +2,7 @@ from odoo import models, fields, api
 
 class Articulo(models.Model):
     _name = 'cl.product.articulo'
-    _description = 'Artículo'
+    _description = 'Articulo'
 
     name = fields.Char(string="Nombre", required=False)
     description = fields.Text(string="Descripción")

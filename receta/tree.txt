@@ -1,15 +1,14 @@
 receta/
 ├── __init__.py
 ├── __manifest__.py
+├── tree.txt
+├── readme.md
 │
 ├── views/
 │   └── receta_model_views.xml
 │
 ├── security/
 │   └── ir.model.access.csv
-│
-├── tests/
-│   └── 
 │
 ├── static/
 │   └── src/
@@ -38,4 +37,3 @@ receta/
     └── talla.py
     └── color.py
     └── numeracion.py
-    

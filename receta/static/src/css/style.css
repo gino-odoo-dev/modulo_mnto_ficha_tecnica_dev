@@ -34,3 +34,14 @@
 .field {
     width: 300px !important;
 }
+
+.oi  {
+    font-size: 9px !important;
+}
+
+.badge-numero {
+    background-color: #d8dadd !important;
+    color: #000 !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+}

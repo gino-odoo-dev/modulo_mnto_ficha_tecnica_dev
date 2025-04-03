@@ -9,7 +9,7 @@
                 <tree string="Ficha Tecnica" editable="bottom">
                     <field name="temporadas_id"/>
                     <field name="articulos_id"/>
-                    <button name="unlink" string="Eliminar" type="object" class="btn-danger"/>
+                    <button name="unlink" string="Eliminar" type="object" class="btn-danger" confirm="¿Estas seguro de que deseas eliminar este registro?"/>
                 </tree>
             </field>
         </record>
@@ -24,14 +24,13 @@
                     <sheet>
                         <div class="row">
                             <div class="col-lg-6 col-md-6">
-                                <group string="Ficha Tecnica">
+                                <group>
                                     <field name="temporadas_id" class="field" style="width: 15px;"/>
                                     <field name="articulos_id" class="field"/>
                                     <field name="state" invisible="1" class="field"/>
                                 </group>
                             </div>
                         </div>
-                        
                         <notebook>
                             <page string="Componentes">
                                 <field name="componentes_ids">
@@ -55,18 +54,23 @@
                             <page string="Copia Ficha Tecnica">
                                 <group>
                                     <field name="part_o" string="Articulo Origen" class="field"/>
-                                    <field name="m_numero_color" class="field"/>                                    
-                                    <field name="numero" string="Numero Talla" class="field"/>
-                                    <field name="part_d" string="Articulo Destino" class="field"/>
-                                    <button name="next_button" string="Duplicar" type="object" class="btn-primary btn-next-update" invisible="not articulos_id"/>
+                                    <field name="m_numero_color" class="field"/>
+                                    <field name="part_d" string="Articulo Destino" class="field"/>                                    
+                                    <field name="numeros_seleccionados" widget="many2many_tags" string="Numeros" class="field"/>    
+                                    <div class="o_notebook" invisible="not numeros_seleccionados">
+                                        <div class="o_notebook_headers">
+                                            <div class="o_notebook_header">
+                                            </div>
+                                        </div>
+                                    </div>
                                 </group>
+                                <button name="next_button" string="Duplicar" type="object" class="btn-primary btn-next-update" invisible="not articulos_id"/>
                             </page>
                         </notebook>
                     </sheet>
                 </form>
             </field>
         </record>
-
         <!-- Wizard View -->
         <record id="view_copia_ficha_tecnica_wizard_form" model="ir.ui.view">
             <field name="name">copia.ficha.tecnica.wizard.form</field>

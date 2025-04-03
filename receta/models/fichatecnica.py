@@ -1,5 +1,4 @@
-from odoo import models, fields, api, exceptions
-from odoo.exceptions import ValidationError
+from odoo import models, fields, api, exceptions, _
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -9,10 +8,11 @@ class FichaTecnica(models.Model):
     _description = 'Ficha Tecnica'
     _rec_name = "nombre_ficha"
 
-# campos ficha tecnica 
     temporadas_id = fields.Many2one('cl.product.temporada', string='Temporada', store=True) 
     articulos_id = fields.Many2one('cl.product.articulo', string='Articulo', store=True)  
     numero = fields.Many2one('cl.product.numeraciones', string='Numero Talla', required=False)
+    numeros_seleccionados = fields.Many2many('cl.product.numeraciones', string='Numeros Talla Seleccionados')
+    numero_seleccionado = fields.Char( string='Numeros Seleccionados', compute='_compute_numeros_badge', store=True)
     state = fields.Selection([('draft', 'Draft'), ('progress', 'Progress'), ('done', 'Done')], string='State', default='progress') 
     componentes_ids = fields.One2many('cl.product.componente', 'ficha_tecnica_id', string='Componentes')  
     nombre_ficha = fields.Char(string='Nombre de Ficha Tecnica', compute='_compute_nombre_ficha', store=True, readonly=True, default="Sin Nombre")
@@ -34,7 +34,13 @@ class FichaTecnica(models.Model):
     xcolfo = fields.Char(string="Color", size=3)
     sequence = fields.Integer(string="Secuencia", default=10)
     mensaje = fields.Char(string="Mensaje", readonly=True)
-    xcuero = fields.Char(string="Cuero", size=3)
+
+    @api.depends('numeros_seleccionados')
+    def _compute_numeros_badge(self):
+        for record in self:
+            record.numero_seleccionado = ', '.join(
+                str(num.numero) for num in record.numeros_seleccionados
+            ) if record.numeros_seleccionados else 'Ninguno seleccionado'
 
     @api.depends('articulos_id')
     def _compute_nombre_ficha(self):
@@ -176,18 +182,6 @@ class FichaTecnica(models.Model):
         self.mensaje = "El SKU está correctamente formado."
 
 # Mapeo de campos y modelos para extraer el SKU
-        mappings = [
-            ('marca_name', 'cl.product.marca', sku[:2]),
-            ('genero_name', 'cl.product.genero', sku[2]),
-            ('correlativo_name', 'cl.product.correlativo', sku[3:7]),
-            ('categoria_name', 'cl.product.categoria', sku[7]),
-            ('subcategoria_name', 'cl.product.subcategoria', sku[8:10]),
-            ('temporada_name', 'cl.product.temporada', sku[10]),
-            ('material_name', 'cl.product.material', sku[11:13]),
-            ('color_name', 'cl.product.color', sku[13:15]),
-            ('tallas_name', 'cl.product.tallas', sku[15:18]),
-        ]
-
         for field_name, model_name, code in mappings:
             record_found = self.env[model_name].search([("codigo", '=', code)], limit=1)
             if not record_found:
@@ -702,43 +696,31 @@ class FichaTecnica(models.Model):
         return None
     
     def next_button(self):
-    # Ejecutar la función de copia
+        """
+        Execute the copy function and return a wizard action.
+        """
         try:
             self.copia_rec_dev()
-            
-            # Crear registro en el wizard
             wizard = self.env['copia.receta.fichatecnica'].create({
-                'mensaje': self.mensaje or "Proceso completado",
+                'mensaje': self.mensaje or _("Proceso completado"),
                 'ficha_tecnica_id': self.id,
-                'detalles': f"Copia realizada de {self.part_o} a {self.part_d}",
-                'exitoso': True if "correctamente" in (self.mensaje or "") else False
+                'detalles': _("Copia realizada de %s a %s") % (self.part_o, self.part_d),
+                'exitoso': True if _("correctamente") in (self.mensaje or "") else False
             })
-            
-            # Retornar acción para mostrar el wizard
-            return {
-                'name': 'Resultado de Copia',
-                'type': 'ir.actions.act_window',
-                'res_model': 'copia.receta.fichatecnica',
-                'res_id': wizard.id,
-                'view_mode': 'form',
-                'target': 'new',
-                'context': self.env.context
-            }
         except Exception as e:
-            # Manejo de errores
             wizard = self.env['copia.receta.fichatecnica'].create({
-                'mensaje': f"Error: {str(e)}",
+                'mensaje': _("Error: %s") % str(e),
                 'ficha_tecnica_id': self.id,
-                'detalles': "Error durante el proceso de copia",
+                'detalles': _("Error durante el proceso de copia"),
                 'exitoso': False
             })
-            return {
-                'name': 'Error en Copia',
-                'type': 'ir.actions.act_window',
-                'res_model': 'copia.receta.fichatecnica',
-                'res_id': wizard.id,
-                'view_mode': 'form',
-                'target': 'new',
-                'context': self.env.context
-            }
+        return {
+            'name': _('Resultado de Copia'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'copia.receta.fichatecnica',
+            'res_id': wizard.id,
+            'view_mode': 'form',
+            'target': 'new',
+            'context': self.env.context
+        }
 

@@ -17,3 +17,4 @@ from . import color
 from . import talla
 from . import numeracion
 from . import copiaficha
+from . import modelo

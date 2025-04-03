@@ -48,4 +48,3 @@ class Componente(models.Model):
         
         # Resto de la lógica existente...
         return super(Componente, self).create(vals)
-

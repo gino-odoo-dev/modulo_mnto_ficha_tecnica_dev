@@ -1,4 +1,5 @@
-from odoo import models, fields
+from odoo import models, fields, api
+from odoo.exceptions import UserError
 
 class ProductTalla(models.Model):
     _name = 'cl.product.tallas'
@@ -6,3 +7,4 @@ class ProductTalla(models.Model):
 
     codigo = fields.Char(string="Codigo", required=True)
     name = fields.Char(string="Nombre", required=True)
+
