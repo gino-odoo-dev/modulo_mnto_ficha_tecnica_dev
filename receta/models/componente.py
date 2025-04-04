@@ -9,7 +9,6 @@ class Componente(models.Model):
     descripcion = fields.Char(string="Descripcion")  
     umedida = fields.Char(string="Unidad de Medida")
     componente_id = fields.Many2one('cl.product.componente', string='Componente Relacionado')  
-
     ficha_tecnica_id = fields.Many2one('receta.fichatecnica', string='Ficha Técnica')
     codigosecuencia_id = fields.Many2one('cl.secuencia', string='Código de Secuencia')  
     compra_manufactura_id = fields.Many2one('cl.product.origen', string='Compra/Manufactura')
@@ -40,11 +39,8 @@ class Componente(models.Model):
 
     @api.model
     def create(self, vals):
-        # Asegurar que el artículo se asigne automáticamente si viene de una ficha técnica
         if 'ficha_tecnica_id' in vals and 'articulo_id' not in vals:
             ficha = self.env['receta.fichatecnica'].browse(vals['ficha_tecnica_id'])
             if ficha.articulos_id:
                 vals['articulo_id'] = ficha.articulos_id.id
-        
-        # Resto de la lógica existente...
         return super(Componente, self).create(vals)

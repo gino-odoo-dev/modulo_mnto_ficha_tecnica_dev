@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <data>
-        <!-- Vista Tree -->
         <record id="receta_fichatecnica_view_tree" model="ir.ui.view">
             <field name="name">receta.fichatecnica.view.tree</field>
             <field name="model">receta.fichatecnica</field>
@@ -13,8 +12,6 @@
                 </tree>
             </field>
         </record>
-
-        <!-- Vista Form -->
         <record id="receta_fichatecnica_view_form" model="ir.ui.view">
             <field name="name">receta.fichatecnica.view.form</field>
             <field name="model">receta.fichatecnica</field>
@@ -71,7 +68,6 @@
                 </form>
             </field>
         </record>
-        <!-- Wizard View -->
         <record id="view_copia_ficha_tecnica_wizard_form" model="ir.ui.view">
             <field name="name">copia.ficha.tecnica.wizard.form</field>
             <field name="model">copia.receta.fichatecnica</field>
@@ -91,22 +87,17 @@
                 </form>
             </field>
         </record>
-
-        <!-- Actions -->
         <record id="action_copia_ficha_tecnica_wizard" model="ir.actions.act_window">
             <field name="name">Resultado de Copia</field>
             <field name="res_model">copia.receta.fichatecnica</field>
             <field name="view_mode">form</field>
             <field name="target">new</field>
         </record>
-
         <record id="action_receta_fichatecnica" model="ir.actions.act_window">
             <field name="name">Ficha Técnica</field>
             <field name="res_model">receta.fichatecnica</field>
             <field name="view_mode">form</field>
         </record>
-
-        <!-- Menú -->
         <menuitem id="menu_receta_fichatecnica" name="Ficha Productos" parent="mrp.menu_mrp_root" action="action_receta_fichatecnica" sequence="10"/>
     </data>
 </odoo>

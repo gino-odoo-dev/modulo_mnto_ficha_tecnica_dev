@@ -37,3 +37,5 @@ receta/
     └── talla.py
     └── color.py
     └── numeracion.py
+    └── copiaficha.py
+    └── modelo.py
