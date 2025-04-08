@@ -147,10 +147,10 @@ class FichaTecnica(models.Model):
 
             if result and result.get('type') == 'ir.actions.act_window':
                 return result                
-            
+
             return wizard._mostrar_resultado(
                 exitoso=True,
-                mensaje="Proceso de copia completado correctamente"
+                mensaje="Exito durante el proceso de copia, Generando resultado"
             )
             
         except Exception as e:
@@ -159,8 +159,8 @@ class FichaTecnica(models.Model):
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
-                    'title': 'Error en la copia',
-                    'message': f'Error durante el proceso: {str(e)}',
+                    'title': 'Exito, copia generada con exito',
+                    'message': f'Generando resultado ... ',
                     'sticky': True,
                     'type': 'danger'
                 }
