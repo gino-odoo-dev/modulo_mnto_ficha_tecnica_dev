@@ -1,5 +1,9 @@
-from odoo import models, fields, api
+import traceback
+from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class CopiaFichaTecnicaWizard(models.TransientModel):
     _name = 'copia.receta.fichatecnica'
@@ -7,17 +11,24 @@ class CopiaFichaTecnicaWizard(models.TransientModel):
  
     mensaje = fields.Text(string="Resultado", readonly=True)
     ficha_tecnica_id = fields.Many2one('receta.fichatecnica', string="Ficha Tecnica Origen", required=True, default=lambda self: self._default_ficha_tecnica_id())
-    temporada_destino_id = fields.Many2one('cl.temporada', string="Temporada Destino", required=True)
+    temporada_destino_id = fields.Many2one('cl.product.temporada', string="Temporada Destino", required=True)
     detalles = fields.Text(string="Detalles de la operacion", readonly=True)
     exitoso = fields.Boolean(string="Operación Exitosa", readonly=True)
-    temporada_origen_id = fields.Many2one('cl.temporada', string="Temporada Origen", readonly=True)
-    articulo_origen_id = fields.Many2one('cl.product.articulo', string="Artículo Origen", readonly=True)
+    temporada_origen_id = fields.Many2one('cl.product.temporada', string="Temporada Origen", readonly=True)
+    temporada_destino_id = fields.Many2one('cl.product.temporada', string="Temporada Destino", required=True)
+
+    articulo_origen_id = fields.Many2one('cl.product.componente', string="Modelo Origen", readonly=True)
+    articulo_destino_id = fields.Many2one('cl.product.componente', string="Modelo Destino", readonly=True)
+    numeros_seleccionados = fields.Many2many('cl.product.numeraciones', string='Numeros Talla')
+    modelo_origen_id = fields.Many2one('cl.product.articulo', string="Artículo Origen", readonly=True)
+    modelo_destino_id = fields.Many2one('cl.product.articulo', string="Artículo Destino", readonly=True)
+
     componentes_count = fields.Integer(string="Total Componentes", readonly=True)
     componente1_id = fields.Many2one('cl.product.componente', string="Componente 1", readonly=True)
     componente1_name = fields.Char(string="Componente 1 - Nombre", readonly=True)
     componente1_descripcion = fields.Char(string="Componente 1 - Descripcion", readonly=True)
     componente1_umedida = fields.Char(string="Componente 1 - Unidad Medida", readonly=True)
-    componente1_codigosecuencia_id = fields.Many2one('cl.secuencia', string="Componente 1 - Codigo Secuencia", readonly=True)
+    componente1_codigosecuencia_id = fields.Many2one('cl.product.secuencia', string="Componente 1 - Codigo Secuencia", readonly=True)
     componente1_compra_manufactura_id = fields.Many2one('cl.product.origen', string="Componente 1 - Compra/Manufactura", readonly=True)
     componente1_compra_manufactura_name = fields.Char(string="Componente 1 - Nombre Compra/Manufactura", readonly=True)
     componente1_cantidad_id = fields.Integer(string="Componente 1 - Cantidad", readonly=True)
@@ -27,6 +38,26 @@ class CopiaFichaTecnicaWizard(models.TransientModel):
     componente1_departamento_id = fields.Many2one('cl.departamento', string="Componente 1 - Departamento", readonly=True)
     componente1_departamento_name = fields.Char(string="Componente 1 - Nombre Departamento", readonly=True)
     componente1_articulo_id = fields.Many2one('cl.product.articulo', string="Componente 1 - Articulo", readonly=True)
+
+    no_comb_o = fields.Integer(string="N° Combinaciones Origen")
+    no_comb_d = fields.Integer(string="N° Combinaciones Destino")
+    
+    # Campos para descomposición SKU
+    marca_id = fields.Many2one('cl.product.marca', string="Marca", readonly=True)
+    genero_id = fields.Many2one('cl.product.genero', string="Género", readonly=True)
+    correlativo_id = fields.Many2one('cl.product.correlativo', string="Correlativo", readonly=True)
+    categoria_id = fields.Many2one('cl.product.categoria', string="Categoría", readonly=True)
+    subcategoria_id = fields.Many2one('cl.product.subcategoria', string="Subcategoría", readonly=True)
+    temporada_sku_id = fields.Many2one('cl.product.temporada', string="Temporada SKU", readonly=True)
+    material_id = fields.Many2one('cl.product.material', string="Material", readonly=True)
+    color_id = fields.Many2one('cl.product.color', string="Color", readonly=True)
+    talla_id = fields.Many2one('cl.product.tallas', string="Talla", readonly=True)
+
+    xcolfo = fields.Char(string="Color", size=3)
+    sequence = fields.Integer(string="Secuencia", default=10)
+    mensaje = fields.Char(string="Mensaje", readonly=True)
+    xcuero = fields.Char(string="Cuero", size=3)
+    m_numero_color = fields.Boolean(string="Modo Copia Numeraciones", default=False)
     
     for i in range(2, 21):
         locals().update({
@@ -34,14 +65,14 @@ class CopiaFichaTecnicaWizard(models.TransientModel):
             f'componente{i}_name': fields.Char(string=f"Componente {i} - Nombre", readonly=True),
             f'componente{i}_descripcion': fields.Char(string=f"Componente {i} - Descripcion", readonly=True),
             f'componente{i}_umedida': fields.Char(string=f"Componente {i} - Unidad Medida", readonly=True),
-            f'componente{i}_codigosecuencia_id': fields.Many2one('cl.secuencia', string=f"Componente {i} - Codigo Secuencia", readonly=True),
+            f'componente{i}_codigosecuencia_id': fields.Many2one('cl.product.secuencia', string=f"Componente {i} - Codigo Secuencia", readonly=True),
             f'componente{i}_compra_manufactura_id': fields.Many2one('cl.product.origen', string=f"Componente {i} - Compra/Manufactura", readonly=True),
             f'componente{i}_compra_manufactura_name': fields.Char(string=f"Componente {i} - Nombre Compra/Manufactura", readonly=True),
             f'componente{i}_cantidad_id': fields.Integer(string=f"Componente {i} - Cantidad", readonly=True),
             f'componente{i}_factor_perdida_id': fields.Float(string=f"Componente {i} - Factor Perdida (%)", readonly=True),
             f'componente{i}_costo_unitario_id': fields.Float(string=f"Componente {i} - Costo Unitario", readonly=True),
             f'componente{i}_costo_ampliado_id': fields.Float(string=f"Componente {i} - Costo Ampliado", readonly=True),
-            f'componente{i}_departamento_id': fields.Many2one('cl.departamento', string=f"Componente {i} - Departamento", readonly=True),
+            f'componente{i}_departamento_id': fields.Many2one('cl.product.departamento', string=f"Componente {i} - Departamento", readonly=True),
             f'componente{i}_departamento_name': fields.Char(string=f"Componente {i} - Nombre Departamento", readonly=True),
             f'componente{i}_articulo_id': fields.Many2one('cl.product.articulo', string=f"Componente {i} - Articulo", readonly=True),
         })
@@ -50,14 +81,15 @@ class CopiaFichaTecnicaWizard(models.TransientModel):
         return self.env.context.get('active_id')
 
     def cargar_datos_fichatecnica(self):
-        """funcion que carga los datos especificos (articulo_id y temporada_id) desde la ficha tecnica"""
+        """Funcion que carga los datos especificos (articulos_id y temporada_id) desde la ficha tecnica"""
         self.ensure_one()
         
         if not self.ficha_tecnica_id:
-            raise UserError("No se ha seleccionado una ficha tecnica origen")
+            raise ValidationError("No se ha seleccionado una ficha técnica origen")
         self.write({
             'temporada_origen_id': self.ficha_tecnica_id.temporada_id.id,
-            'articulo_origen_id': self.ficha_tecnica_id.articulos_id.id
+            'articulo_origen_id': self.ficha_tecnica_id.articulos_id.id,  
+            'modelo_origen_id': self.ficha_tecnica_id.articulos_id.modelo_id.id
         })
         return True
     
@@ -73,10 +105,11 @@ class CopiaFichaTecnicaWizard(models.TransientModel):
         
         try:
             if not self.ficha_tecnica_id:
-                raise UserError("Debe seleccionar una ficha tecnica origen")
+                raise ValidationError("Debe seleccionar una ficha tecnica origen")
             vals = {
                 'temporada_origen_id': self.ficha_tecnica_id.temporada_id.id,
                 'articulo_origen_id': self.ficha_tecnica_id.articulos_id.id,
+                'modelo_origen_id': self.ficha_tecnica_id.articulos_id.modelo_id.id,
             }
             componentes = self.ficha_tecnica_id.componente_ids.sorted(key=lambda r: r.id)
             vals['componentes_count'] = len(componentes)
@@ -112,7 +145,7 @@ class CopiaFichaTecnicaWizard(models.TransientModel):
                 'detalles': str(e)
             })
             vals.update(result)
-            raise UserError(f"Error al cargar componentes: {str(e)}")
+            raise ValidationError(f"Error al cargar componentes: {str(e)}")
         
         self.write(vals)
         return {
@@ -128,13 +161,13 @@ class CopiaFichaTecnicaWizard(models.TransientModel):
         descompone el SKU del articulo origen y guarda los datos en campos del wizard
         """
         self.ensure_one()
-        
+    
         if not self.articulo_origen_id:
-            raise UserError("No hay articulo origen seleccionado")
+            raise ValidationError("No hay artículo origen seleccionado")
         
-        sku = self.articulo_origen_id.name
+        sku = self.articulo_origen_id.default_code or ''  
         
-        if not sku or len(sku) != 18:
+        if len(sku) != 18:
             raise ValidationError("El SKU debe tener exactamente 18 caracteres")
 
         mappings = [
@@ -158,91 +191,12 @@ class CopiaFichaTecnicaWizard(models.TransientModel):
         
         self.write(vals)
         return True
-
-    def copia_rec_dev(self):
-        """
-        funcion principal que realiza las validaciones y copia de recetas.
-        """
-        self.ensure_one()
-        try:
-            temporada_existente = self.env['code.mstr'].search([
-                ('code_domain', '=', 'global_domain'),
-                ('code_fldname', '=', 'TEMPORADA'),
-                ('code_value', '=', self.temporadas_id.code_value)
-            ], limit=1)
-            if not temporada_existente:
-                raise ValidationError("La temporada no existe.")
-
-            if not self.part_o:
-                raise ValidationError("El articulo origen no puede estar vacio.")
-            articulo_origen = self.env['product.template'].search([('default_code', '=', self.part_o)], limit=1)
-            if not articulo_origen:
-                raise ValidationError("El articulo origen no existe.")
-            if not articulo_origen.pt_part_type.startswith("PT-"):
-                raise ValidationError("El articulo origen debe ser de tipo 'PT-'.")
-            if articulo_origen.pt_pm_code != 'M':
-                raise ValidationError("El articulo origen debe estar marcado como manufacturado.")
-
-            estructura_existente = self.env['ps.mstr'].search([
-                ('ps_domain', '=', 'global_domain'),
-                ('ps_ref', '=', self.temporadas_id.code_value)
-            ], limit=1)
-            if not estructura_existente:
-                raise ValidationError("El articulo origen no tiene estructura para la temporada.")
-
-            if self.m_numero_color:
-                if self.part_d:
-                    raise ValidationError("El articulo destino debe estar vacío cuando se copia numeraciones/ficha tecnica.")
-            else:
-                if not self.part_d:
-                    raise ValidationError("El articulo destino no puede estar vacío.")
-                articulo_destino = self.env['product.template'].search([('default_code', '=', self.part_d)], limit=1)
-                if not articulo_destino:
-                    raise ValidationError("El articulo destino no existe.")
-                if not articulo_destino.pt_part_type.startswith("PT-"):
-                    raise ValidationError("El articulo destino debe ser de tipo 'PT-'.")
-                if articulo_destino.pt_pm_code != 'M':
-                    raise ValidationError("El articulo destino debe estar marcado como manufacturado.")
-                if self.part_o == self.part_d:
-                    raise ValidationError("El articulo origen y destino no pueden ser iguales.")
-                if self.m_modelo_o == self.m_modelo_d:
-                    raise ValidationError("El modelo de origen y destino deben ser diferentes.")
-
-                if self.no_comb_o != self.no_comb_d:
-                    raise ValidationError("El numero de combinaciones no coincide entre el articulo origen y destino.")
-
-                ficha_tecnica_existente = self.env['ps.mstr'].search([
-                    ('ps_domain', '=', 'global_domain'),
-                    ('ps_par', '=', self.part_d),
-                    ('ps_ref', '=', self.temporadas_id.code_value)
-                ], limit=1)
-                if ficha_tecnica_existente:
-                    raise ValidationError("El articulo destino ya tiene una ficha tecnica para la temporada especificada.")
-
-            if self.m_numero_color:
-                self._copia_numero(self.part_o, self.temporadas_id.code_value)
-            else:
-                self._copia_color(self.part_o, self.part_d, self.temporadas_id.code_value)
-                self._cambia_materia(self.part_o, self.m_modelo_o, self.part_d, self.m_modelo_d)
-                self._cambia_componente(self.part_o, self.m_modelo_o, self.part_d, self.m_modelo_d)
-
-            mensaje_final = "Proceso de copia completado correctamente."
-            self.write({'mensaje': mensaje_final})
-            return True
-        except ValidationError as e:
-            self.write({'mensaje': f"Error de validacion: {str(e)}"})
-            return False
-        except Exception as e:
-            self.write({'mensaje': f"Error inesperado: {str(e)}"})
-            return False
-
+    
     def obtener_numero_combinaciones(self, codigo_articulo):
         """
         metodo para obtener el numero de combinaciones de un articulo.
-        es necesaria para cumplir con la validacion del numero de combinaciones entre el articulo origen y el articulo destino. 
-        Esta validacion es crucial para garantizar que los articulos sean compatibles antes de realizar la copia.
         """
-        articulo = self.env['product.template'].search([('default_code', '=', codigo_articulo)], limit=1)
+        articulo = self.env['cl_product_articulo'].search([('default_code', '=', codigo_articulo)], limit=1)
         
         if not articulo:
             raise ValidationError(f"El articulo {codigo_articulo} no existe.")
@@ -251,412 +205,308 @@ class CopiaFichaTecnicaWizard(models.TransientModel):
             return articulo.x_numero_combinaciones
         else:
             raise ValidationError(f"El articulo {codigo_articulo} no tiene un numero de combinaciones definido.")
-        
-    def _copia_numero(self, part_o, temporadas_id):
+
+    def copia_rec_dev(self):
         """
-        copia las formulas de un articulo origen a otros articulos del mismo modelo.
+        Función principal que realiza la copia de fichas técnicas con todas las reglas de negocio del sistema original.
         """
-        articulo_origen = self.env['product.template'].search([('default_code', '=', part_o)], limit=1)
-        articulos_mismo_modelo = self.env['product.template'].search([
-            ('pt_model', '=', articulo_origen.pt_model),
-            ('pt_part_type', '=like', 'PT-%'),
-            ('pt_pm_code', '=', 'M'),
-            ('default_code', '!=', part_o)
-        ])
-        for articulo in articulos_mismo_modelo:
-            formulas_origen = self.env['ps.mstr'].search([
-                ('ps_domain', '=', 'global_domain'),
-                ('ps_par', '=', part_o),
-                ('ps_ref', '=', temporadas_id)
-            ])
-            for formula in formulas_origen:
-                self.env['ps.mstr'].create({
-                    'ps_par': articulo.default_code,
-                    'ps_comp': formula.ps_comp,
-                    'ps_ref': formula.ps_ref,
-                    'ps_qty_per': formula.ps_qty_per,
-                    'ps_scrp_pct': formula.ps_scrp_pct,
-                    'ps_ps_code': formula.ps_ps_code,
-                    'ps_lt_off': formula.ps_lt_off,
-                    'ps_start': formula.ps_start,
-                    'ps_end': formula.ps_end,
-                    'ps_rmks': formula.ps_rmks,
-                    'ps_op': formula.ps_op,
-                    'ps_item_no': formula.ps_item_no,
-                    'ps_mandatory': formula.ps_mandatory,
-                    'ps_exclusive': formula.ps_exclusive,
-                    'ps_process': formula.ps_process,
-                    'ps_qty_type': formula.ps_qty_type,
-                    'ps_user1': formula.ps_user1,
-                    'ps_user2': formula.ps_user2,
-                    'ps_fcst_pct': formula.ps_fcst_pct,
-                    'ps_default': formula.ps_default,
-                })
-
-    def _cambia_componente(self, part_o, m_modelo_o, part_d, m_modelo_d):
-        """
-        cambia los componentes de una receta en la base de datos.
-        """
-        ps_mstr_origin_records = self.env['ps.mstr'].search([
-            ('ps_domain', '=', 'global_domain'),
-            ('ps_par', '=', part_o),
-            ('ps_ref', '=', self.temporadas_id.code_value)
-        ])
-
-        if not ps_mstr_origin_records:
-            raise ValidationError(f"No se encontraron registros de origen para el articulo {part_o} y la temporada {self.temporadas_id.code_value}.")
-
-        ps_mstr_dest_records = self.env['ps.mstr'].search([
-            ('ps_domain', '=', 'global_domain'),
-            ('ps_par', '=', part_d),
-            ('ps_ref', '=', self.temporadas_id.code_value)
-        ])
-
-        if not ps_mstr_dest_records:
-            raise ValidationError(f"No se encontraron registros de destino para el articulo {part_d} y la temporada {self.temporadas_id.code_value}.")
-
-        for ps_dest in ps_mstr_dest_records:
-            for ps_origin in ps_mstr_origin_records:
-                if ps_dest.ps_comp == m_modelo_o:
-                    nuevo_componente = self._determinar_nuevo_componente(ps_origin.ps_comp)
-                    if nuevo_componente:
-                        ps_dest.write({
-                            'ps_comp': nuevo_componente,
-                            'ps_qty_per': ps_origin.ps_qty_per,
-                            'ps_scrp_pct': ps_origin.ps_scrp_pct,
-                            'ps_ps_code': ps_origin.ps_ps_code,
-                            'ps_lt_off': ps_origin.ps_lt_off,
-                            'ps_start': ps_origin.ps_start,
-                            'ps_end': ps_origin.ps_end,
-                            'ps_rmks': ps_origin.ps_rmks,
-                            'ps_op': ps_origin.ps_op,
-                            'ps_item_no': ps_origin.ps_item_no,
-                            'ps_mandatory': ps_origin.ps_mandatory,
-                            'ps_exclusive': ps_origin.ps_exclusive,
-                            'ps_process': ps_origin.ps_process,
-                            'ps_qty_type': ps_origin.ps_qty_type,
-                            'ps_user1': ps_origin.ps_user1,
-                            'ps_user2': ps_origin.ps_user2,
-                            'ps_fcst_pct': ps_origin.ps_fcst_pct,
-                            'ps_default': ps_origin.ps_default,
-                        })
-                    else:
-                        raise ValidationError(f"No se pudo determinar un nuevo componente para {ps_origin.ps_comp}.")
-
-    def _crea_ficha_comp(self, comp_origen, comp_destino, temporadas_id):
-        """
-        crea la ficha tecnica del componente destino basada en el componente origen.
-        """
-        ps_mstr_destino = self.env['ps.mstr'].search([
-            ('ps_domain', '=', 'global_domain'),
-            ('ps_par', '=', comp_destino),
-            ('ps_ref', '=', temporadas_id)
-        ], limit=1)
-
-        if ps_mstr_destino:
-            raise ValidationError(f"La ficha tecnica del componente destino {comp_destino} ya existe para la temporada {temporadas_id}.")
-
-        ps_mstr_origen_records = self.env['ps.mstr'].search([
-            ('ps_domain', '=', 'global_domain'),
-            ('ps_par', '=', comp_origen),
-            ('ps_ref', '=', temporadas_id)
-        ])
-
-        for ps_origen in ps_mstr_origen_records:
-            comp_cambia_num = (
-                ps_origen.ps_comp[-3:] == comp_origen[-3:]
-            )
-            comp_numero = comp_destino[-3:] if comp_cambia_num else ""
-
-            self.env['ps.mstr'].create({
-                'ps_par': comp_destino,
-                'ps_comp': (
-                    ps_origen.ps_comp[:-3] + comp_numero
-                    if comp_cambia_num else ps_origen.ps_comp
-                ),
-                'ps_ref': ps_origen.ps_ref,
-                'ps_qty_per': ps_origen.ps_qty_per,
-                'ps_scrp_pct': ps_origen.ps_scrp_pct,
-                'ps_ps_code': ps_origen.ps_ps_code,
-                'ps_lt_off': ps_origen.ps_lt_off,
-                'ps_start': ps_origen.ps_start,
-                'ps_end': ps_origen.ps_end,
-                'ps_rmks': ps_origen.ps_rmks,
-                'ps_op': ps_origen.ps_op,
-                'ps_item_no': ps_origen.ps_item_no,
-                'ps_mandatory': ps_origen.ps_mandatory,
-                'ps_exclusive': ps_origen.ps_exclusive,
-                'ps_process': ps_origen.ps_process,
-                'ps_qty_type': ps_origen.ps_qty_type,
-                'ps_user1': ps_origen.ps_user1,
-                'ps_user2': ps_origen.ps_user2,
-                'ps_fcst_pct': ps_origen.ps_fcst_pct,
-                'ps_default': ps_origen.ps_default,
-                'ps_group': ps_origen.ps_group,
-                'ps_critical': ps_origen.ps_critical,
-                'ps_qty_per_b': ps_origen.ps_qty_per_b,
-                'ps_comp_um': ps_origen.ps_comp_um,
-                'ps_um_conv': ps_origen.ps_um_conv,
-                'ps_assay': ps_origen.ps_assay,
-                'ps_comm_code': ps_origen.ps_comm_code,
-                'ps_non_bal': ps_origen.ps_non_bal,
-                'ps__qad01': ps_origen.ps__qad01,
-                'ps_userid': ps_origen.ps_userid,
-                'ps_mod_date': ps_origen.ps_mod_date,
-                'ps_batch_pct': ps_origen.ps_batch_pct,
-                'ps_cmtindx': ps_origen.ps_cmtindx,
-                'ps_start_ecn': ps_origen.ps_start_ecn,
-                'ps_end_ecn': ps_origen.ps_end_ecn,
-                'ps_joint_type': ps_origen.ps_joint_type,
-                'ps_cop_qty': ps_origen.ps_cop_qty,
-                'ps_cst_pct': ps_origen.ps_cst_pct,
-                'ps_prod_pct': ps_origen.ps_prod_pct,
-                'ps_qty_cons': ps_origen.ps_qty_cons,
-                'ps_qty_exch': ps_origen.ps_qty_exch,
-                'ps_qty_diag': ps_origen.ps_qty_diag,
-                'ps__chr01': ps_origen.ps__chr01,
-                'ps__chr02': ps_origen.ps__chr02,
-                'ps__dte01': ps_origen.ps__dte01,
-                'ps__dte02': ps_origen.ps__dte02,
-                'ps__dec01': ps_origen.ps__dec01,
-                'ps__dec02': ps_origen.ps__dec02,
-                'ps__log01': ps_origen.ps__log01,
-                'ps__log02': ps_origen.ps__log02,
-                'ps__qadc01': ps_origen.ps__qadc01,
-                'ps__qadc02': ps_origen.ps__qadc02,
-                'ps__qadt01': ps_origen.ps__qadt01,
-                'ps__qadt02': ps_origen.ps__qadt02,
-                'ps__qadt03': ps_origen.ps__qadt03,
-                'ps__qadd01': ps_origen.ps__qadd01,
-                'ps__qadd02': ps_origen.ps__qadd02,
-                'ps__qadl01': ps_origen.ps__qadl01,
-                'ps__qadl02': ps_origen.ps__qadl02,
-                'ps_domain': ps_origen.ps_domain,
-            })
-        bom_mstr_destino = self.env['bom.mstr'].search([
-            ('bom_domain', '=', 'global_domain'),
-            ('bom_parent', '=', comp_destino)
-        ], limit=1)
-
-        if not bom_mstr_destino:
-            bom_mstr_origen = self.env['bom.mstr'].search([
-                ('bom_domain', '=', 'global_domain'),
-                ('bom_parent', '=', comp_origen)
+        self.ensure_one()
+        try:
+            # =============================================
+            # VALIDACIONES COMUNES PARA AMBOS MODOS DE COPIA
+            # =============================================
+            
+            if not self.temporada_destino_id:
+                raise ValidationError(_("Debe seleccionar una temporada destino válida"))
+                
+            if not self.articulo_origen_id:
+                raise ValidationError(_("El artículo origen no puede estar vacío"))
+                
+            if not self.articulo_origen_id.pt_part_type or not self.articulo_origen_id.pt_part_type.startswith("PT-"):
+                raise ValidationError(_("El artículo origen debe ser de tipo 'PT-' (Producto Terminado)"))
+                
+            if not self.articulo_origen_id.pt_pm_code or self.articulo_origen_id.pt_pm_code != 'M':
+                raise ValidationError(_("El artículo origen debe estar marcado como manufacturado (M)"))
+                
+            if not self.env['receta.fichatecnica'].search([
+                ('articulos_id', '=', self.articulo_origen_id.id), 
+                ('temporada_id', '=', self.temporada_origen_id.id)
+            ], limit=1):
+                raise ValidationError(_("El artículo origen no tiene estructura para la temporada seleccionada"))
+                
+            prod_term = self.env['cl_product_terminado'].search([
+                ('temporada_id', '=', self.temporada_origen_id.id),
+                ('modelo_corto_id', '=', self.articulo_origen_id.modelo_corto_id.id),
+                ('material_id', '=', self.articulo_origen_id.material_id.id),
+                ('color_id', '=', self.articulo_origen_id.color_id.id)
             ], limit=1)
+            
+            if not prod_term or (prod_term.planta_id != self.articulo_origen_id.planta_id or 
+                                prod_term.color_forro_id != self.articulo_origen_id.color_forro_id):
+                raise ValidationError(_("No existe producto terminado para la temporada con estas características")) 
+            self.no_comb_o = self.obtener_numero_combinaciones(self.articulo_origen_id.default_code)
+            
+            # =============================================
+            # LÓGICA DE COPIA POR NUMERACIÓN/TALLA
+            # =============================================
+            if self.m_numero_color:
+                if not self.numeros_seleccionados:
+                    raise ValidationError(_("Debe seleccionar al menos una numeración/talla"))
+                    
+                for numeracion in self.numeros_seleccionados:
+                    articulo_destino = self.env['cl_product_articulo'].search([
+                        ('modelo_id', '=', self.articulo_origen_id.modelo_id.id),
+                        ('numeracion_id', '=', numeracion.id),
+                        ('pt_part_type', '=like', 'PT-%'),
+                        ('pt_pm_code', '=', 'M')
+                    ], limit=1)
+                    
+                    if not articulo_destino:
+                        raise ValidationError(_("No se encontró artículo destino válido para la numeración %s") % numeracion.name)
+                        
+                    self.no_comb_d = self.obtener_numero_combinaciones(articulo_destino.default_code)
+                    if self.no_comb_o != self.no_comb_d:
+                        raise ValidationError(_("El número de combinaciones no coincide para la numeración %s") % numeracion.name)
+                        
+                    self._copia_numero(self.articulo_origen_id, articulo_destino, self.temporada_destino_id)
+                    self._cambia_componente(articulo_destino, numeracion.numero)
+                    
+            # =============================================
+            # LÓGICA DE COPIA POR COLOR/MODELO
+            # =============================================
+            else:
+                if not self.articulo_destino_id:
+                    raise ValidationError(_("Debe seleccionar un artículo destino"))
+                    
+                if self.articulo_origen_id == self.articulo_destino_id:
+                    raise ValidationError(_("El artículo origen y destino no pueden ser iguales"))
+                    
+                if self.articulo_origen_id.modelo_id == self.articulo_destino_id.modelo_id:
+                    raise ValidationError(_("El modelo de origen y destino deben ser diferentes"))
+                    
+                self.no_comb_d = self.obtener_numero_combinaciones(self.articulo_destino_id.default_code)
+                if self.no_comb_o != self.no_comb_d:
+                    raise ValidationError(_("El número de combinaciones no coincide entre origen y destino"))
+                    
+                if self.env['receta.fichatecnica'].search([
+                    ('articulos_id', '=', self.articulo_destino_id.id),
+                    ('temporada_id', '=', self.temporada_destino_id.id)
+                ], limit=1):
+                    raise ValidationError(_("El artículo destino ya tiene una ficha técnica para esta temporada"))
+                    
+                self._copia_color(
+                    self.articulo_origen_id, 
+                    self.articulo_origen_id.modelo_id,
+                    self.articulo_destino_id, 
+                    self.articulo_destino_id.modelo_id
+                )
+                
+                self._cambia_materia(
+                    self.articulo_origen_id,
+                    self.articulo_origen_id.modelo_id,
+                    self.articulo_destino_id,
+                    self.articulo_destino_id.modelo_id
+                )
+                
+                self._cambia_componente(
+                    self.articulo_destino_id, 
+                    self.articulo_destino_id.numeracion_id.numero
+                )
+            
+            # =============================================
+            # RESULTADO EXITOSO
+            # =============================================
+            destino = self.articulo_destino_id.default_code if not self.m_numero_color else 'múltiples numeraciones'
+            mensaje = _("""
+                Proceso de copia completado correctamente:
+                - Origen: %s
+                - Destino: %s
+                - Temporada destino: %s
+            """) % (self.articulo_origen_id.default_code, destino, self.temporada_destino_id.display_name)
+            
+            return self._mostrar_resultado(True, mensaje)
+            
+        except ValidationError as e:
+            return self._mostrar_resultado(False, _("Error de validación: %s") % str(e))
+        except Exception as e:
+            _logger.error("Error inesperado en copia_rec_dev: %s", traceback.format_exc())
+            return self._mostrar_resultado(False, _("Error inesperado: %s") % str(e))
 
-            if bom_mstr_origen:
-                self.env['bom.mstr'].create({
-                    'bom_parent': comp_destino,
-                    'bom_desc': bom_mstr_origen.bom_desc,
-                    'bom_batch': bom_mstr_origen.bom_batch,
-                    'bom_batch_um': bom_mstr_origen.bom_batch_um,
-                    'bom_cmtindx': bom_mstr_origen.bom_cmtindx,
-                    'bom_ll_code': bom_mstr_origen.bom_ll_code,
-                    'bom_user1': bom_mstr_origen.bom_user1,
-                    'bom_user2': bom_mstr_origen.bom_user2,
-                    'bom_userid': bom_mstr_origen.bom_userid,
-                    'bom_mod_date': bom_mstr_origen.bom_mod_date,
-                    'bom__chr01': bom_mstr_origen.bom__chr01,
-                    'bom__chr02': bom_mstr_origen.bom__chr02,
-                    'bom__chr03': bom_mstr_origen.bom__chr03,
-                    'bom__chr04': bom_mstr_origen.bom__chr04,
-                    'bom__chr05': bom_mstr_origen.bom__chr05,
-                    'bom__dte01': bom_mstr_origen.bom__dte01,
-                    'bom__dte02': bom_mstr_origen.bom__dte02,
-                    'bom__dec01': bom_mstr_origen.bom__dec01,
-                    'bom__dec02': bom_mstr_origen.bom__dec02,
-                    'bom__log01': bom_mstr_origen.bom__log01,
-                    'bom_formula': bom_mstr_origen.bom_formula,
-                    'bom_mthd': bom_mstr_origen.bom_mthd,
-                    'bom_fsm_type': bom_mstr_origen.bom_fsm_type,
-                    'bom_site': bom_mstr_origen.bom_site,
-                    'bom_loc': bom_mstr_origen.bom_loc,
-                    'bom__qadc01': bom_mstr_origen.bom__qadc01,
-                    'bom__qadc02': bom_mstr_origen.bom__qadc02,
-                    'bom__qadc03': bom_mstr_origen.bom__qadc03,
-                    'bom__qadd01': bom_mstr_origen.bom__qadd01,
-                    'bom__qadi01': bom_mstr_origen.bom__qadi01,
-                    'bom__qadi02': bom_mstr_origen.bom__qadi02,
-                    'bom__qadt01': bom_mstr_origen.bom__qadt01,
-                    'bom__qadt02': bom_mstr_origen.bom__qadt02,
-                    'bom__qadl01': bom_mstr_origen.bom__qadl01,
-                    'bom__qadl02': bom_mstr_origen.bom__qadl02,
-                    'bom_mthd_qtycompl': bom_mstr_origen.bom_mthd_qtycompl,
-                    'bom_domain': bom_mstr_origen.bom_domain,
-                })
-
-    def _copia_color(self, part_o, part_d, temporadas_id): 
+    def _copia_numero(self, articulo_origen, articulo_destino, temporada_destino):
         """
-        copia las formulas de un articulo origen a un articulo destino.
+        Copia las fórmulas a otros artículos del mismo modelo (diferente numeración)
+        """
+        self.env['receta.fichatecnica'].search([
+            ('articulos_id', '=', articulo_destino.id),
+            ('temporada_id', '=', temporada_destino.id)
+        ]).unlink()
+
+        ficha_origen = self.env['receta.fichatecnica'].search([
+            ('articulos_id', '=', articulo_origen.id),
+            ('temporada_id', '=', self.temporada_origen_id.id)
+        ], limit=1)
+        
+        if not ficha_origen:
+            raise ValidationError(_("No se encontró ficha técnica origen"))
+        
+        nueva_ficha = ficha_origen.copy({
+            'articulos_id': articulo_destino.id,
+            'temporada_id': temporada_destino.id,
+            'origen_copia_id': ficha_origen.id
+        })
+
+        for comp_origen in ficha_origen.componente_ids:
+            nuevo_comp = comp_origen.copy({
+                'ficha_tecnica_id': nueva_ficha.id,
+                'origen_copia_id': comp_origen.id
+            })
+
+    def _copia_color(self, articulo_origen, modelo_origen, articulo_destino, modelo_destino):
+        """
+        Copia las fórmulas a un artículo con diferente color/modelo
+        """
+        self.env['receta.fichatecnica'].search([
+            ('articulos_id', '=', articulo_destino.id),
+            ('temporada_id', '=', self.temporada_destino_id.id)
+        ]).unlink()
+
+        ficha_origen = self.env['receta.fichatecnica'].search([
+            ('articulos_id', '=', articulo_origen.id),
+            ('temporada_id', '=', self.temporada_origen_id.id)
+        ], limit=1)
+        
+        if not ficha_origen:
+            raise ValidationError(_("No se encontró ficha técnica origen"))
+        
+        nueva_ficha = ficha_origen.copy({
+            'articulos_id': articulo_destino.id,
+            'temporada_id': self.temporada_destino_id.id,
+            'origen_copia_id': ficha_origen.id
+        })
+
+        for comp_origen in ficha_origen.componente_ids:
+            if comp_origen.articulo_id == articulo_origen:
+                continue  
+                
+            nuevo_comp = comp_origen.copy({
+                'ficha_tecnica_id': nueva_ficha.id,
+                'origen_copia_id': comp_origen.id
+            })
+
+    def _cambia_componente(self, articulo_destino, numero_talla):
+        """
+        Aplica reglas de negocio a los componentes copiados según la talla/numeración
+        """
+        ficha_destino = self.env['receta.fichatecnica'].search([
+            ('articulos_id', '=', articulo_destino.id),
+            ('temporada_id', '=', self.temporada_destino_id.id)
+        ], limit=1)
+        
+        if not ficha_destino:
+            raise ValidationError(_("No se encontró ficha técnica destino"))
+        
+        secuencia = 0
+        for componente in ficha_destino.componente_ids.sorted(key=lambda r: r.sequence):
+            secuencia += 1
+            componente_original = componente.origen_copia_id
+            
+            if componente_original.subcategoria_id.codigo == '115':
+                tipo_copia = self._determinar_tipo_taco(numero_talla)
+                correlativo = self._obtener_correlativo(componente_original, tipo_copia)
+                if correlativo:
+                    nuevo_codigo = f"{componente.codigo[:-3]}{correlativo}"
+                    componente.write({'codigo': nuevo_codigo})
+            
+            if (componente_original.rango_talla_desde and componente_original.rango_talla_hasta and
+                not (componente_original.rango_talla_desde <= numero_talla <= componente_original.rango_talla_hasta)):
+                
+                alternativo = self.env['cl.product.componente'].search([
+                    ('subcategoria_id', '=', componente_original.subcategoria_id.id),
+                    ('rango_talla_desde', '<=', numero_talla),
+                    ('rango_talla_hasta', '>=', numero_talla)
+                ], limit=1)
+                
+                if alternativo:
+                    componente.write({'articulo_id': alternativo.id})
+
+    def _cambia_materia(self, articulo_origen, modelo_origen, articulo_destino, modelo_destino):
+        """
+        Cambia materiales según reglas de color/modelo
+        """
+        self.xcuero = articulo_destino.material_id.codigo[:3]
+        self.xcolor = articulo_destino.color_id.codigo[:3]
+        self.xplnta = articulo_destino.planta_id.codigo[:3] if articulo_destino.planta_id else '000'
+        self.xcolfo = articulo_destino.color_forro_id.codigo[:3] if articulo_destino.color_forro_id else '000'
+
+        ficha_destino = self.env['receta.fichatecnica'].search([
+            ('articulos_id', '=', articulo_destino.id),
+            ('temporada_id', '=', self.temporada_destino_id.id)
+        ], limit=1)
+        
+        if not ficha_destino:
+            raise ValidationError(_("No se encontró ficha técnica destino"))
+        
+        secuencia = 0
+        for componente in ficha_destino.componente_ids.sorted(key=lambda r: r.sequence):
+            secuencia += 1
+            componente_original = componente.origen_copia_id
+            
+            if componente_original.subcategoria_id.codigo == '051':
+                nuevo_codigo = f"{componente.codigo[:6]}{self.xcolfo}0{articulo_destino.numeracion_id.numero}"
+                componente.write({'codigo': nuevo_codigo})
+            
+            elif componente_original.subcategoria_id.codigo == '100':
+                nuevo_codigo = f"{componente.codigo[:4]}{self.xplnta}{self.xcolor}0{articulo_destino.numeracion_id.numero}"
+                componente.write({'codigo': nuevo_codigo})
+            
+            elif componente_original.subcategoria_id.codigo == '028':
+                nuevo_codigo = f"{componente.codigo[:2]}{self.xcuero}{self.xcolor}0{articulo_destino.numeracion_id.numero}"
+                componente.write({'codigo': nuevo_codigo})
+            
+            alternativo = self._obtener_material_alternativo(
+                componente_original.subcategoria_id,
+                secuencia,
+                articulo_destino.modelo_id,
+                articulo_destino.material_id,
+                articulo_destino.color_id,
+                articulo_destino.planta_id
+            )
+            if alternativo:
+                componente.write({'articulo_id': alternativo.id}) 
+
+    def _mostrar_resultado(self, exitoso, mensaje):
+        """
+        Muestra el resultado de la operación en el wizard de forma segura
         """
         try:
-            formulas_existentes = self.env['ps.mstr'].search([
-                ('ps_domain', '=', 'global_domain'),
-                ('ps_par', '=', part_d),
-                ('ps_ref', '=', temporadas_id)
-            ])
-            if formulas_existentes:
-                formulas_existentes.unlink()
-
-            formulas_origen = self.env['ps.mstr'].search([
-                ('ps_domain', '=', 'global_domain'),
-                ('ps_par', '=', part_o),
-                ('ps_ref', '=', temporadas_id)
-            ])
-            for formula in formulas_origen:
-                self.env['ps.mstr'].create({
-                    'ps_par': part_d,
-                    'ps_comp': formula.ps_comp,
-                    'ps_ref': formula.ps_ref,
-                    'ps_qty_per': formula.ps_qty_per,
-                    'ps_scrp_pct': formula.ps_scrp_pct,
-                    'ps_ps_code': formula.ps_ps_code,
-                    'ps_lt_off': formula.ps_lt_off,
-                    'ps_start': formula.ps_start,
-                    'ps_end': formula.ps_end,
-                    'ps_rmks': formula.ps_rmks,
-                    'ps_op': formula.ps_op,
-                    'ps_item_no': formula.ps_item_no,
-                    'ps_mandatory': formula.ps_mandatory,
-                    'ps_exclusive': formula.ps_exclusive,
-                    'ps_process': formula.ps_process,
-                    'ps_qty_type': formula.ps_qty_type,
-                    'ps_user1': formula.ps_user1,
-                    'ps_user2': formula.ps_user2,
-                    'ps_fcst_pct': formula.ps_fcst_pct,
-                    'ps_default': formula.ps_default,
-                })
-        except Exception as e:
-            raise ValidationError(f"Error al eliminar las formulas existentes: {str(e)}")
-
-    def _cambia_materia(self, part_o, m_modelo_o, part_d, m_modelo_d):
-        """
-        cambia las materias primas de un articulo según las reglas definidas.
-        """
-        articulo_destino = self.env['product.template'].search([
-            ('default_code', '=', part_d)
-        ], limit=1)
-
-        if not articulo_destino:
-            raise ValidationError("El articulo destino no existe.")
-
-        self.xcuero = articulo_destino.pt__chr01  
-        self.xcolor = articulo_destino.pt__chr02 
-        self.xplnta = articulo_destino.pt__chr06 
-        self.xcolfo = articulo_destino.pt__chr07 
-
-        for ps_record in self.env['ps.mstr'].search([
-            ('ps_domain', '=', 'global_domain'),
-            ('ps_par', '=', m_modelo_d),
-            ('ps_ref', '=', self.temporadas_id.code_value),
-            ('ps_comp', 'like', '051%')  
-        ]):
-            remplaza = f"{ps_record.ps_comp[:6]}{self.xcolfo}0{ps_record.pt_draw}"
-            if not self.env['ps.mstr'].search([
-                ('ps_domain', '=', 'global_domain'),
-                ('ps_par', '=', m_modelo_d),
-                ('ps_ref', '=', self.temporadas_id.code_value),
-                ('ps_comp', '=', remplaza)
-            ], limit=1):
-                ps_record.write({'ps_comp': remplaza})
-            else:
-                raise ValidationError(f"Ya existe el forro {remplaza} en la estructura.")
-
-        for ps_record in self.env['ps.mstr'].search([
-            ('ps_domain', '=', 'global_domain'),
-            ('ps_par', '=', part_d),
-            ('ps_ref', '=', self.temporadas_id.code_value),
-            ('ps_comp', 'like', '100%')  
-        ]):
-            remplaza = f"{ps_record.ps_comp[:4]}{self.xplnta}{self.xcolor}0{ps_record.pt_draw}"
-            if not self.env['ps.mstr'].search([
-                ('ps_domain', '=', 'global_domain'),
-                ('ps_par', '=', m_modelo_d),
-                ('ps_ref', '=', self.temporadas_id.code_value),
-                ('ps_comp', '=', remplaza)
-            ], limit=1):
-                ps_record.write({'ps_comp': remplaza})
-            else:
-                raise ValidationError(f"Ya existe la planta {remplaza} en la estructura.")
-
-        m_seq_tra = 0
-        for ps_record in self.env['ps.mstr'].search([
-            ('ps_domain', '=', 'global_domain'),
-            ('ps_par', '=', m_modelo_d),
-            ('ps_ref', '=', self.temporadas_id.code_value),
-            ('ps_comp', 'like', '028%')  
-        ]):
-            m_seq_tra += 1
-            remplaza = f"{ps_record.ps_comp[:2]}{self.xcuero}{self.xcolor}0{ps_record.pt_draw}"
-            if not self.env['ps.mstr'].search([
-                ('ps_domain', '=', 'global_domain'),
-                ('ps_par', '=', m_modelo_d),
-                ('ps_ref', '=', self.temporadas_id.code_value),
-                ('ps_comp', '=', remplaza)
-            ], limit=1):
-                ps_record.write({'ps_comp': remplaza})
-            else:
-                ps_record.write({'ps_ref': f"X{ps_record.ps_ref}", 'ps_comp': remplaza})
-
-        for ps_record in self.env['ps.mstr'].search([
-            ('ps_domain', '=', 'global_domain'),
-            ('ps_par', '=', m_modelo_d),
-            ('ps_ref', 'like', 'X%')  
-        ]):
-            ps_record.write({'ps_ref': ps_record.ps_ref[1:]})  
-
-    def _determinar_nuevo_componente(self, pt_record):
-        """
-        determina el nuevo componente basado en el componente actual.
-        """
-        nuevo_componente = self.env['pt.mstr'].search([
-            ('pt_domain', '=', 'global_domain'),
-            ('pt_group', '=', pt_record.pt_group),  
-            ('pt_part', '!=', pt_record.pt_part),  
-        ], limit=1)
-
-        if nuevo_componente:
-            return nuevo_componente.pt_part
-
-        mapeo_componentes = {
-            'COMPONENTE_ANTIGUO_1': 'COMPONENTE_NUEVO_1',
-            'COMPONENTE_ANTIGUO_2': 'COMPONENTE_NUEVO_2',
-        }
-
-        if pt_record.pt_part in mapeo_componentes:
-            return mapeo_componentes[pt_record.pt_part]
-        if (pt_record.pt_part.startswith("PT-")):
-            return f"PT-NUEVO-{pt_record.pt_part[3:]}"
-        return None
-    
-    def next_button(self):
-        """
-        ejecuta las funciones cargar_datos_fichatecnica, cargar_datos_componentes, _descomponer_sku y copia_rec_dev.
-        """
-        try:
-            self.copia_rec_dev()
-            wizard = self.env['copia.receta.fichatecnica'].create({
-                'mensaje': self.mensaje or _("Proceso completado"),
-                'ficha_tecnica_id': self.id,
-                'detalles': _("Copia realizada de %s a %s") % (self.part_o, self.part_d),
-                'exitoso': True if _("correctamente") in (self.mensaje or "") else False
+            if not isinstance(self.id, models.NewId) and not isinstance(self.id, int):
+                raise ValueError("ID de registro no válido")
+            
+            self.write({
+                'exitoso': exitoso,
+                'mensaje': mensaje,
+                'detalles': traceback.format_exc() if not exitoso else "Operación completada sin errores"
             })
+            if not self.exists():
+                raise ValueError("El registro del wizard no existe en la base de datos")
+            
+            return {
+                'type': 'ir.actions.act_window',
+                'res_model': self._name,
+                'res_id': self.id,
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {'create': False} 
+            }
         except Exception as e:
-            wizard = self.env['copia.receta.fichatecnica'].create({
-                'mensaje': _("Error: %s") % str(e),
-                'ficha_tecnica_id': self.id,
-                'detalles': _("Error durante el proceso de copia"),
-                'exitoso': False
-            })
-        return {
-            'name': _('Resultado de Copia'),
-            'type': 'ir.actions.act_window',
-            'res_model': 'copia.receta.fichatecnica',
-            'res_id': wizard.id,
-            'view_mode': 'form',
-            'target': 'new',
-            'context': self.env.context
-        }
-
-    def close_wizard(self):
-        return {'type': 'ir.actions.act_window_close'}
+            _logger.error("Error en _mostrar_resultado: %s", str(e))
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Error',
+                    'message': f'Ocurrió un error: {str(e)}',
+                    'sticky': True,
+                    'type': 'danger'
+                }
+            }

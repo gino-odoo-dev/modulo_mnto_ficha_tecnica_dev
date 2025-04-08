@@ -23,7 +23,7 @@
                             <div class="col-lg-6 col-md-6">
                                 <group>
                                     <field name="temporadas_id" class="field" style="width: 15px;"/>
-                                    <field name="articulos_id" class="field"/>
+                                    <field name="articulos_id" string="Articulo" class="field"/>
                                     <field name="state" invisible="1" class="field"/>
                                 </group>
                             </div>
@@ -50,9 +50,10 @@
                             
                             <page string="Copia Ficha Tecnica">
                                 <group>
-                                    <field name="part_o" string="Articulo Origen" class="field"/>
-                                    <field name="m_numero_color" class="field"/>
-                                    <field name="part_d" string="Articulo Destino" class="field"/>                                    
+                                    <field name="temporadas_id_display" string="Temporada" readonly="1" class="field"/>
+                                    <field name="articulos_id_display" string="Articulo Origen" readonly="1" class="field"/>
+                                    <field name="articulo_destino_id" string="Articulo Destino" class="field"/>
+
                                     <field name="numeros_seleccionados" widget="many2many_tags" string="Numeros" class="field"/>    
                                     <div class="o_notebook" invisible="not numeros_seleccionados">
                                         <div class="o_notebook_headers">
@@ -61,7 +62,7 @@
                                         </div>
                                     </div>
                                 </group>
-                                <button name="next_button" string="Duplicar" type="object" class="btn-primary btn-next-update" invisible="not articulos_id"/>
+                                <button name="button_duplicar" string="Duplicar" type="object" class="btn-primary btn-next-update"/>
                             </page>
                         </notebook>
                     </sheet>
@@ -80,9 +81,7 @@
                             <field name="mensaje" readonly="1"/>
                             <field name="detalles" readonly="1"/>
                         </group>
-                        <footer>
-                            <button name="close_wizard" string="Cerrar" type="object" class="btn-primary"/>
-                        </footer>
+                    
                     </sheet>
                 </form>
             </field>
