@@ -13,16 +13,16 @@ class FichaTecnica(models.Model):
     temporadas_id = fields.Many2one('cl.product.temporada', string='Temporada', store=True) 
     articulos_id = fields.Many2one('cl.product.articulo', string='Articulo', store=True)  
     numero = fields.Many2one('cl.product.numeraciones', string='Numero Talla', required=False)
-    numeros_seleccionados = fields.Many2many('cl.product.numeraciones', string='Numeros Talla Seleccionados')
+    numeros_seleccionados = fields.Many2one('cl.product.numeraciones', string='Numeros Talla')
     numero_seleccionado = fields.Char( string='Numeros Seleccionados', compute='_compute_numeros_badge', store=True)
     state = fields.Selection([('draft', 'Draft'), ('progress', 'Progress'), ('done', 'Done')], string='State', default='progress') 
     componentes_ids = fields.One2many('cl.product.componente', 'ficha_tecnica_id', string='Componentes')  
     nombre_ficha = fields.Char(string='Nombre de Ficha Tecnica', compute='_compute_nombre_ficha', store=True, readonly=True, default="Sin Nombre")
-    articulo_origen_id = fields.Many2one('cl.product.componente', string="Modelo Origen", compute='_compute_articulo_origen', store=True)
+    articulo_origen_id = fields.Many2one('cl.product.componente', string="Modelo Origen", store=True)
     articulo_destino_id = fields.Many2one('cl.product.componente', string="Modelo Destino", readonly=False)
     
-    temporadas_id_display = fields.Char(string="Temporada (sin ultimos 3 digitos)", compute="_compute_temporadas_id_display", store=True)
-    articulos_id_display = fields.Char(string="Articulo Origen (sin ultimos 3 digitos)", compute="_compute_articulos_id_display", store=True)
+    temporadas_id_display = fields.Char(string="Temporada", compute="_compute_temporadas_id_display", store=True)
+    articulos_id_display = fields.Char(string="Articulo Origen", compute="_compute_articulos_id_display", store=True)
 
     @api.depends('temporadas_id')
     def _compute_temporadas_id_display(self):
@@ -32,15 +32,7 @@ class FichaTecnica(models.Model):
     @api.depends('articulos_id')
     def _compute_articulos_id_display(self):
         for record in self:
-            articulo_name = record.articulos_id.name if record.articulos_id else ''
-            record.articulos_id_display = articulo_name[:-3] if len(articulo_name) > 3 else articulo_name
-
-    @api.depends('numeros_seleccionados')
-    def _compute_numeros_badge(self):
-        for record in self:
-            record.numero_seleccionado = ', '.join(
-                str(num.numero) for num in record.numeros_seleccionados
-            ) if record.numeros_seleccionados else 'Ninguno seleccionado'
+            record.articulos_id_display = record.articulos_id.name if record.articulos_id else ''
 
     @api.depends('articulos_id')
     def _compute_nombre_ficha(self):

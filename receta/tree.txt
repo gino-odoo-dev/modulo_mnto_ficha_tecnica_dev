@@ -207,3 +207,40 @@ Versiones más modernas de Progress
 Sistema de gestión documental integrado
 
 Este código representa una solución compleja y altamente especializada para la gestión de fichas técnicas en la industria del calzado, con una fuerte dependencia de la estructura de datos específica de la implementación.
+
+
+
+=================================================================================
+=================================================================================
+
+=================================================================================
+=================================================================================
+
+
+los detalles son varios
+ 
+pero no que mas me interesa es esto
+ 
+en el punto 9
+ 
+Articulo Origen: Este campo se completa con el articulo seleccionado en la ficha técnica pero sin los últimos 3 dígitos que serían los dígitos de la talla.
+ 
+eso debe ser con la enumeracion
+ 
+osea con la talla
+ 
+lme deberia copiar junto con la talla
+ 
+
+Numero: Es un campo selección donde se podrá elegir entre todas las tallas agregando o eliminando el rango que se requiera.
+ 
+esto es para que me copie los numeros siguentes todo el rango
+ 
+ejemplo el modelo es del 35 al 40 
+ 
+yo ingreso el numero 35 y deberia generarme al numero 40
+ 
+es es lo mas importante hasta lo que he visto
+ 
+marco ahora me voy a produccion y alla no tengo teams asi que me envias un correo
+ 

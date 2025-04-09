@@ -51,10 +51,10 @@
                             <page string="Copia Ficha Tecnica">
                                 <group>
                                     <field name="temporadas_id_display" string="Temporada" readonly="1" class="field"/>
-                                    <field name="articulos_id_display" string="Articulo Origen" readonly="1" class="field"/>
+                                    <field name="articulos_id_display" string="Articulo Origen" class="field"/>
                                     <field name="articulo_destino_id" string="Articulo Destino" class="field"/>
-
-                                    <field name="numeros_seleccionados" widget="many2many_tags" string="Numeros" class="field"/>    
+                                    <field name="articulo_origen_id" string="Articulo" class="field"/>
+                                    <field name="numeros_seleccionados" widget="many2one" string="Numero Talla Seleccionado" class="field"/>
                                     <div class="o_notebook" invisible="not numeros_seleccionados">
                                         <div class="o_notebook_headers">
                                             <div class="o_notebook_header">
