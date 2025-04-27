@@ -71,7 +71,7 @@ class FichaTecnica(models.Model):
                 return {
                     'warning': {
                         'title': "Temporada requerida",
-                        'message': "Debe seleccionar una temporada antes de actualizar los componentes",
+                        'message': "Debe seleccionar una temporada antes de actualizar componentes",
                     }
                 }       
             if record.articulos_id:
@@ -205,12 +205,12 @@ class FichaTecnica(models.Model):
                     record.write(updates)
                     _logger.info(f"SKU descompuesto exitosamente. Campos actualizados: {updates.keys()}")
             except ValidationError as ve:
-                _logger.warning(f"Error de validacion con SKU {sku}: {str(ve)}")
+                _logger.warning(f"Error con SKU {sku}: {str(ve)}")
                 raise ve
             except Exception as e:
                 _logger.error(
-                    f"Falla tecnica con SKU {sku}. Error: {str(e)}\n"
-                    f"Traceback completo: {traceback.format_exc()}"
+                    f"Error {sku}. Error: {str(e)}\n"
+                    f"Traceback: {traceback.format_exc()}"
                 )
                 raise ValidationError(
                     "Error en sistema al procesar SKU."
@@ -226,9 +226,8 @@ class FichaTecnica(models.Model):
                 'temporada_destino_id': self.temporadas_id.id,  
                 'articulo_origen_id': self.articulos_id.id,
                 'articulo_destino_id': self.articulo_destino_id.id if self.articulo_destino_id else False,
-                'mensaje': f"Copia de {self.articulos_id.display_name or 'Ficha técnica'}"
+                'mensaje': f"Copia de {self.articulos_id.display_name or 'Ficha tecnica'}"
             }
-            
             copia = self.env['copia.receta.fichatecnica'].create(copia_vals)
             
             for i, comp in enumerate(self.componentes_ids[:20], 1):
@@ -256,7 +255,7 @@ class FichaTecnica(models.Model):
                 copia.write(componente_vals)
             
             return {
-                'name': 'Copia Completada',
+                'name': 'Copia Realizada',
                 'type': 'ir.actions.act_window',
                 'res_model': 'copia.receta.fichatecnica',
                 'view_mode': 'form',

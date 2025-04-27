@@ -35,10 +35,8 @@ class CopiaFichaTecnicaWizard(models.TransientModel):
     componente1_departamento_id = fields.Many2one('hr.department', string="Componente 1 - Departamento", readonly=True)
     componente1_departamento_name = fields.Char(string="Componente 1 - Nombre Departamento", readonly=True)
     componente1_articulo_id = fields.Many2one('product.template', string="Componente 1 - Articulo", readonly=True)
-
     no_comb_o = fields.Integer(string="N° Combinaciones Origen")
     no_comb_d = fields.Integer(string="N° Combinaciones Destino")
-    
     marca_id = fields.Many2one('cl.product.marca', string="Marca", readonly=True)
     genero_id = fields.Many2one('cl.product.genero', string="Género", readonly=True)
     correlativo_id = fields.Many2one('cl.product.correlativo', string="Correlativo", readonly=True)
@@ -48,16 +46,13 @@ class CopiaFichaTecnicaWizard(models.TransientModel):
     material_id = fields.Many2one('cl.product.material', string="Material", readonly=True)
     color_id = fields.Many2one('cl.product.color', string="Color", readonly=True)
     talla_id = fields.Many2one('cl.product.tallas', string="Talla", readonly=True)
-
     xcolfo = fields.Char(string="Color", size=3)
     sequence = fields.Integer(string="Secuencia", default=10)
     mensaje = fields.Char(string="Mensaje", readonly=True)
     xcuero = fields.Char(string="Cuero", size=3)
     m_numero_color = fields.Boolean(string="Modo Copia Numeraciones", default=False)
-
     no_comb_o = fields.Integer(string="N° Combinaciones Origen")
     no_comb_d = fields.Integer(string="N° Combinaciones Destino")
-
     xcolor = fields.Char(string="Código de color (XCOLOR)", size=3)
     xplnta = fields.Char(string="Código de planta (XPLNTA)", size=3)
     ficha_destino = fields.Char(string="ficha_destino", readonly=True)
@@ -103,7 +98,7 @@ class CopiaFichaTecnicaWizard(models.TransientModel):
             'temporada_origen_id': self.ficha_tecnica_id.temporadas_id.id,
             'articulo_origen_id': articulo_origen.id,
             'modelo_origen_id': articulo_origen.cl_long_model.id if articulo_origen.cl_long_model else False,
-            'detalles': articulo_origen.cl_long_model if articulo_origen.cl_long_model else 'Sin código',
+            'detalles': articulo_origen.cl_long_model if articulo_origen.cl_long_model else 'Sin codigo',
         })
         return True
 
@@ -124,8 +119,8 @@ class CopiaFichaTecnicaWizard(models.TransientModel):
                 'temporada_origen_id': self.ficha_tecnica_id.temporadas_id.id,
                 'articulo_origen_id': articulo_origen.id,
                 'modelo_origen_id': articulo_origen.cl_long_model.id if articulo_origen.cl_long_model else False,
-                'detalles': f"Copia de [{articulo_origen.cl_long_model or 'Sin código'}] {articulo_origen.cl_long_model}",
-                'mensaje': f"Copia de [{articulo_origen.default_code or 'Sin código'}] {articulo_origen.name}",
+                'detalles': f"Copia de [{articulo_origen.cl_long_model or 'Sin codigo'}] {articulo_origen.cl_long_model}",
+                'mensaje': f"Copia de [{articulo_origen.default_code or 'Sin codigo'}] {articulo_origen.name}",
             }
             
             componentes = self.ficha_tecnica_id.componente_ids.sorted(key=lambda r: r.id)
@@ -157,11 +152,11 @@ class CopiaFichaTecnicaWizard(models.TransientModel):
             
         except Exception as e:
             result.update({
-                'mensaje': 'Error al cargar componentes',
+                'mensaje': 'Error',
                 'detalles': str(e)
             })
             vals.update(result)
-            raise ValidationError(f"Error al cargar componentes: {str(e)}")
+            raise ValidationError(f"Error: {str(e)}")
         
         self.write(vals)
         return {
