@@ -4,7 +4,7 @@
     'summary': 'Ingreso y Copia Ficha Tecnica',
     'description': 'Modulo de Ingreso y Copia de Ficha Tecnica.',
     'author': 'Mag',
-    'depends': ['base', 'mrp', 'product'],
+    'depends': ['base', 'mrp', 'product', 'stock',],
     'data': [
         'views/receta_model_views.xml',
         'security/ir.model.access.csv',

@@ -1,11 +1,12 @@
-from odoo import models, fields, api
+from odoo import models, fields # type: ignore
 
 class Articulo(models.Model):
-    _name = 'cl.product.articulo'
+    _inherit = 'product.template'
     _description = 'Articulo'
+    _rec_name = "name"  
 
     name = fields.Char(string="Nombre", required=False)
-    description = fields.Text(string="Descripción")
     temporada_id = fields.Many2one('cl.product.temporada', string="Temporada")
-    company_id = fields.Many2one('res.company', string="Compañía", default=lambda self: self.env.company)
-    codigo = fields.Char(string="Codigo SKU", required=False, help="Codigo SKU del articulo.")
+    company_id = fields.Many2one('res.company', string="Compañía", default=lambda self: self.env.company)    
+    cl_long_model = fields.Char(string="Nombre Largo", store=True)
+    cl_short_model = fields.Char(string="Nombre Corto", store=True)

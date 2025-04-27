@@ -8,7 +8,7 @@
                 <tree string="Ficha Tecnica" editable="bottom">
                     <field name="temporadas_id"/>
                     <field name="articulos_id"/>
-                    <button name="unlink" string="Eliminar" type="object" class="btn-danger" confirm="¿Estas seguro de que deseas eliminar este registro?"/>
+                    <button name="unlink" string="Eliminar" type="object" class="btn-danger" confirm="Estas seguro de que deseas eliminar este registro?"/>
                 </tree>
             </field>
         </record>
@@ -33,8 +33,8 @@
                                 <field name="componentes_ids">
                                     <tree editable="bottom" create="1" delete="1">
                                         <field name="articulo_id" class="field" options="{'always_reload': True}"/>
-                                        <field name="codigosecuencia_id" options="{'no_create': True}"/>
                                         <field name="componente_id" widget="many2one" options="{'no_create': False}"/>
+                                        <field name="componentes_id"/>
                                         <field name="name" string="Nombre Componente"/>
                                         <field name="descripcion"/>
                                         <field name="umedida"/>
@@ -51,16 +51,9 @@
                             <page string="Copia Ficha Tecnica">
                                 <group>
                                     <field name="temporadas_id_display" string="Temporada" readonly="1" class="field"/>
-                                    <field name="articulos_id_display" string="Articulo Origen" class="field"/>
+                                    <field name="articulo_origen_id" string="Articulo Origen" class="field"/>
                                     <field name="articulo_destino_id" string="Articulo Destino" class="field"/>
-                                    <field name="articulo_origen_id" string="Articulo" class="field"/>
                                     <field name="numeros_seleccionados" widget="many2one" string="Numero Talla Seleccionado" class="field"/>
-                                    <div class="o_notebook" invisible="not numeros_seleccionados">
-                                        <div class="o_notebook_headers">
-                                            <div class="o_notebook_header">
-                                            </div>
-                                        </div>
-                                    </div>
                                 </group>
                                 <button name="button_duplicar" string="Duplicar" type="object" class="btn-primary btn-next-update"/>
                             </page>
@@ -77,9 +70,7 @@
                     <sheet>
                         <group>
                             <field name="ficha_tecnica_id" readonly="1"/>
-                            <field name="exitoso" readonly="1"/>
-                            <field name="mensaje" readonly="1"/>
-                            <field name="detalles" readonly="1"/>
+                            <field name="articulo_destino_id" readonly="1"/>
                         </group>
                     
                     </sheet>
@@ -93,7 +84,7 @@
             <field name="target">new</field>
         </record>
         <record id="action_receta_fichatecnica" model="ir.actions.act_window">
-            <field name="name">Ficha Técnica</field>
+            <field name="name">Ficha Tecnica</field>
             <field name="res_model">receta.fichatecnica</field>
             <field name="view_mode">form</field>
         </record>

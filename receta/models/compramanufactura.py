@@ -1,8 +1,8 @@
 from odoo import models, fields
 
 class CompraManufactura(models.Model):
-    _name = 'cl.product.compramanufactura' 
+    _inherit = 'cl.product.origen' 
     _description = 'Compra/Manufactura'
 
     name = fields.Char(string="Nombre", required=True)
-    description = fields.Text(string="Descripción")
+    description = fields.Text(string="Descripcion")

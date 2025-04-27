@@ -4,7 +4,7 @@ class ProductSubcategoria(models.Model):
     _name = 'cl.product.subcategoria'
     _description = 'Product Subcategoria'
 
-    codigo = fields.Char(string="Codigo", required=True)
+    code = fields.Char(string="Codigo", required=True)
     name = fields.Char(string="Nombre", required=True)
 
     

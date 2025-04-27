@@ -1,6 +1,6 @@
 from odoo import models, fields
 
-class Temporada(models.Model):
+class ClProductTemporada(models.Model):
     _name = 'cl.product.temporada'
     _description = 'Temporada'
 

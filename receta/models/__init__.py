@@ -7,7 +7,6 @@ from . import costounitario
 from . import departamento
 from . import factorperdida
 from . import fichatecnica
-from . import secuencia
 from . import temporada
 from . import marca
 from . import correlativo
@@ -18,3 +17,5 @@ from . import talla
 from . import numeracion
 from . import copiaficha
 from . import modelo
+from . import product_template
+from . import material
