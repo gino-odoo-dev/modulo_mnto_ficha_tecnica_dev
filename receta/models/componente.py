@@ -1,27 +1,39 @@
 from odoo import models, fields, api # type: ignore
 
 class Componente(models.Model):
-    _name = 'cl.product.componente'
+    _inherit = 'product.template'
     _description = 'Componente'
     _order = 'id'
+    _rec_name = 'default_code'
 
-    name = fields.Char(string="Nombre", required=False)
-    descripcion = fields.Char(string="Descripcion")  
-    umedida = fields.Char(string="Unidad de Medida")
-    componente_id = fields.Many2one('cl.product.componente', string='Componente Relacionado')  
-    ficha_tecnica_id = fields.Many2one('receta.fichatecnica', string='Ficha Técnica')
-    compra_manufactura_id = fields.Many2one( 'cl.product.origen', string='Compra/Manufactura', ondelete='set null')
-    cantidad_id = fields.Integer(string='Cantidad')
-    factor_perdida_id = fields.Float(string='Factor de Perdida (%)')
-    costo_unitario_id = fields.Float(string='Costo Unitario')
-    costo_ampliado_id = fields.Float(string='Costo Ampliado', compute='_compute_costo_ampliado', store=True) 
-    departamento_id = fields.Many2one('mrp.workcenter', string='Departamento', store=True)
-    articulo_id = fields.Many2one('product.template', string='Artículo', required=False, ondelete='cascade')
-    componentes_id = fields.Many2one('product.template', string='Componente', required=False, ondelete='cascade')
-    numeros_seleccionados = fields.Many2one('cl.product.tallas', string='Numeros Talla')
     numero_seleccionado = fields.Char( string='Numeros Seleccionados', compute='_compute_numeros_badge', store=True)
-    origen_copia_id = fields.Many2one('cl.product.componente', string="Componente Origen", readonly=True)
+    compra_manufactura_id = fields.Many2one( 'cl.product.origen', string='Compra/Manufactura', ondelete='set null')
+    componentes_id = fields.Many2one('product.template', string='Componente', required=False, ondelete='cascade')
+    costo_ampliado_id = fields.Float(string='Costo Ampliado', compute='_compute_costo_ampliado', store=True)
+    articulo_id = fields.Many2one('product.template', string='Articulo', required=False, ondelete='cascade')
+    origen_copia_id = fields.Many2one('product.template', string="Componente Origen", readonly=True)
+    company_id = fields.Many2one('res.company', string="Compañía", default=lambda self: self.env.company)
+    componente_id = fields.Many2one('product.template', string='Componente Relacionado')
+    departamento_id = fields.Many2one('mrp.workcenter', string='Departamento', store=True)
+    numeros_seleccionados = fields.Many2one('cl.product.tallas', string='Numeros Talla')
     subcategoria_id = fields.Many2one('cl.product.subcategoria', string="Subcategoría")
+    factor_perdida_id = fields.Float(string='Factor de Perdida (%)')
+    codigo_componente = fields.Char(string="Codigo Componente")
+    default_code = fields.Char(string="Codigo", required=False)
+    product_uom_id = fields.Many2one('uom.uom', string="UdM")
+    costo_unitario_id = fields.Float(string='Costo Unitario')
+    name = fields.Char(string="Nombre", required=False)
+    umedida = fields.Char(string="Unidad de Medida")
+    descripcion = fields.Char(string="Descripcion")
+    cantidad_id = fields.Integer(string='Cantidad')
+    product_qty = fields.Float(string="Cantidad")
+    sequence = fields.Integer(string="Secuencia")
+    cantidad = fields.Float(string="Cantidad")
+
+    @api.depends('default_code')
+    def _compute_display_name(self):
+        for record in self:
+            record.display_name = record.default_code or ''
 
     @api.depends('numeros_seleccionados')
     def _compute_numeros_badge(self):
@@ -43,12 +55,3 @@ class Componente(models.Model):
             self.descripcion = ''
             self.umedida = ''
             self.name = ''
-
-    @api.model
-    def create(self, vals):
-        if 'ficha_tecnica_id' in vals and 'articulo_id' not in vals:
-            ficha = self.env['receta.fichatecnica'].browse(vals['ficha_tecnica_id'])
-            if ficha.articulos_id:
-                vals['articulo_id'] = ficha.articulos_id.id
-        return super(Componente, self).create(vals)
-    

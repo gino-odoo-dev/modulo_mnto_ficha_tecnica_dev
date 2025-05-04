@@ -1,7 +1,9 @@
+from itertools import product
 import traceback
 from odoo import models, fields, api, exceptions, _ # type: ignore
 from odoo.exceptions import ValidationError  # type: ignore
 import logging
+from datetime import datetime, timedelta
 
 _logger = logging.getLogger(__name__)
 
@@ -9,28 +11,119 @@ class FichaTecnica(models.Model):
     _name = 'receta.fichatecnica'
     _description = 'Ficha Tecnica'
     _rec_name = "nombre_ficha"
+    _order = "id asc"
 
-    name = fields.Char(string="Nombre", required=False)
-    temporadas_id = fields.Many2one('cl.product.temporada', string='Temporada', required=True) 
-    articulos_id = fields.Many2one('product.template', string='Articulo', required=True)
-    numeros_seleccionados = fields.Many2one('cl.product.tallas', string='Numeros Talla')
-    numero_seleccionado = fields.Char( string='Numeros Seleccionados', compute='_compute_numeros_badge', store=True)
-    state = fields.Selection([('draft', 'Draft'), ('progress', 'Progress'), ('done', 'Done')], string='State', default='progress') 
-    componentes_ids = fields.One2many('cl.product.componente', 'ficha_tecnica_id', string='Componentes')  
-    nombre_ficha = fields.Char(string='Nombre de Ficha Tecnica', compute='_compute_nombre_ficha', store=True, readonly=True)
-    articulo_origen_id = fields.Many2one('product.template', string="Modelo Origen", store=True)
-    articulo_destino_id = fields.Many2one('product.template', string="Ficha Tecnica Destino", readonly=False)
-    temporada_origen_id = fields.Many2one('cl.product.temporada', required=True)
     temporada_destino_id = fields.Many2one('cl.product.temporada', required=True, default=lambda self: self.env.context.get('default_temporada_origen_id'))
+    componentes_ids = fields.Many2many('product.template', 'ficha_tecnica_product_template_rel', 'ficha_id', 'product_id', string='Componentes')
+    state = fields.Selection([('draft', 'Draft'), ('progress', 'Progress'), ('done', 'Done')], string='State', default='progress') 
+    nombre_ficha = fields.Char(string='Nombre de Ficha Tecnica', compute='_compute_nombre_ficha', store=True, readonly=True)
+    numero_seleccionado = fields.Char( string='Numeros Seleccionados', compute='_compute_numeros_badge', store=True)
     temporadas_id_display = fields.Char(string="Temporada", compute="_compute_temporadas_id_display", store=True)
-    marca_id = fields.Many2one('cl.product.marca', string="Marca")
-    genero_id = fields.Many2one('cl.product.genero', string="Genero")
-    correlativo_id = fields.Many2one('cl.product.correlativo', string="Correlativo")
-    categoria_id = fields.Many2one('product.category', string="Categoria")
+    componentes_importados = fields.Boolean(string="componentes Importados", default=False, readonly=True)
+    articulo_destino_id = fields.Many2one('product.template', string="Ficha Tecnica Destino", readonly=False)
+    orden_compra1_id = fields.Many2one('purchase.order', string="Orden de Compra", compute="_compute_oc_id")
+    articulo_origen_id = fields.Many2one('product.template', string="Modelo Origen", store=True)
+    temporadas_id = fields.Many2one('cl.product.temporada', string='Temporada', required=True)
+    articulos_id = fields.Many2one('product.template', string='Articulo', required=True)
+    numeros_seleccionados = fields.Many2one('cl.product.tallas', string='Numeros Talla') 
     subcategoria_id = fields.Many2one('cl.product.subcategoria', string="SubCategoria")
+    correlativo_id = fields.Many2one('cl.product.correlativo', string="Correlativo")
     temporada_sku_id = fields.Many2one('cl.product.temporada', string="temporada")
+    temporada_origen_id = fields.Many2one('cl.product.temporada', required=True)
     material_id = fields.Many2one('cl.product.material', string="Material")
+    categoria_id = fields.Many2one('product.category', string="Categoria")
+    genero_id = fields.Many2one('cl.product.genero', string="Genero")
+    marca_id = fields.Many2one('cl.product.marca', string="Marca")
     color_id = fields.Many2one('cl.product.color', string="Color")
+    name = fields.Char(string="Nombre", required=False)
+
+    for i in range(1, 6):
+        locals()[f'componente{i}_id'] = fields.Integer(string=f"Componente {i} - ID", compute='_compute_id_componente', store=True)
+
+    @api.constrains('componentes_ids')
+    def _check_components(self):
+        for record in self:
+            if not record.articulos_id and record.componentes_ids:
+                raise ValidationError("No puede agregar componentes sin seleccionar un artículo primero")
+
+    @api.depends('temporadas_id')
+    def _compute_temporadas_id_display(self):
+        for record in self:
+            record.temporadas_id_display = record.temporadas_id.name if record.temporadas_id else ''
+
+    @api.depends('componentes_ids')  
+    def _compute_id_componente(self):
+        for record in self:
+            for i in range(1, 6):
+                record[f'componente{i}_id'] = 0
+            for i, comp in enumerate(record.componentes_ids[:5], 1):
+                if comp:
+                    record[f'componente{i}_id'] = comp.id
+
+    def action_importar_componentes(self):
+        for record in self:
+            if record.componentes_importados:
+                continue                  
+            if not record.articulos_id:
+                raise ValidationError("Debe seleccionar un artículo primero")
+                
+            try:
+                record.componentes_ids = [(5, 0, 0)]  
+                bom_lines = self.env['mrp.bom.line'].search([
+                    ('bom_id.product_tmpl_id', '=', record.articulos_id.id)
+                ])
+                if not bom_lines:
+                    raise ValidationError("No se encontraron componentes para este artículo")
+                
+                components = bom_lines.mapped('product_id.product_tmpl_id')
+                record.componentes_ids = [(6, 0, components.ids)]
+                
+                record.componentes_importados = True
+                _logger.info(f"Importados {len(components)} componentes para ficha {record.id}")
+                
+            except Exception as e:
+                _logger.error(f"Error importando componentes: {str(e)}\n{traceback.format_exc()}")
+                raise ValidationError(f"Error al importar componentes: {str(e)}")
+        return True
+
+    @api.model
+    def obtener_componentes_por_codigo_producto(self, articulos_id):
+        try:
+            plantilla_producto = self.env['product.template'].browse(articulos_id)
+            if not plantilla_producto.exists():
+                _logger.warning(f"No se encontro producto con ID {articulos_id}")
+                return []   
+            listas_materiales = self.env['mrp.bom'].search([
+                ('product_tmpl_id', '=', plantilla_producto.id),
+                ('active', '=', True)
+            ])
+            if not listas_materiales:
+                _logger.warning(f"No se encontraron listas de materiales activas para el producto {articulos_id}")
+                return []   
+                
+            lineas_ldm = self.env['mrp.bom.line'].search([
+                ('bom_id', 'in', listas_materiales.ids)
+            ], order="sequence asc") 
+            
+            resultado = []
+            for linea in lineas_ldm:
+                componente_data = {
+                    'id': linea.id,
+                    'codigo_componente': linea.product_id.default_code or '',
+                    'company_id': linea.company_id.id if linea.company_id else False,
+                    'product_uom_id': linea.product_uom_id.id if linea.product_uom_id else False,
+                    'sequence': linea.sequence,
+                    'product_qty': linea.product_qty,
+                    'id_producto': linea.product_id.id,
+                    'nombre_producto': linea.product_id.name,
+                }
+                resultado.append(componente_data)
+                
+            return resultado
+            
+        except Exception as e:
+            _logger.error(f"Error obteniendo componentes: {str(e)}\n{traceback.format_exc()}")
+            raise ValidationError(f"Error al obtener componentes: {str(e)}")
   
     @api.depends('componentes_ids')
     def _compute_numeros_badge(self):
@@ -53,16 +146,10 @@ class FichaTecnica(models.Model):
                     or record.articulos_id.name
                 )
                 nombre = model_name or "Modelo sin nombre"
-                
                 if record.temporadas_id and record.temporadas_id.name:
                     nombre += f" - {record.temporadas_id.name}"
                     
             record.nombre_ficha = nombre
-    
-    @api.depends('temporadas_id')
-    def _compute_temporadas_id_display(self):
-        for record in self:
-            record.temporadas_id_display = record.temporadas_id.name if record.temporadas_id else ''
 
     @api.onchange('articulos_id')
     def _onchange_articulos_id(self):
@@ -80,44 +167,60 @@ class FichaTecnica(models.Model):
                     'domain': {'componentes_ids': [('articulo_id', '=', record.articulos_id.id)]}
                 }
             
+    @api.model
     def create(self, vals):
         if not vals.get('temporadas_id'):
             raise ValidationError("Debe seleccionar una temporada")
         if not vals.get('articulos_id'):
-            raise ValidationError("Debe seleccionar un articulo")
-            
-        if self.search([
+            raise ValidationError("Debe seleccionar un artículo")
+        existing = self.search([
             ('temporadas_id', '=', vals['temporadas_id']),
-            ('articulos_id', '=', vals['articulos_id'])
-        ]):
-            _logger.warning("Duplicado de ficha tecnica")
+            ('articulos_id', '=', vals['articulos_id']),
+            ('state', '=', 'done')  
+        ], limit=1)
+        
+        if existing:
+            raise ValidationError("Ya existe una ficha FINALIZADA para este articulo y temporada. "
+                                "Puede crear una nueva versión en estado borrador.")
+        
+        try:
+            ficha = super().create(vals)
+            ficha._descomponer_sku()
             
-        ficha = super().create(vals)
-        ficha._descomponer_sku()
-        ficha.link_components()
-        return ficha
+            if ficha.articulos_id.default_code and not ficha.componentes_ids:
+                ficha.action_importar_componentes()    
+            return ficha
+            
+        except Exception as e:
+            _logger.error(f"Error creando ficha: {str(e)}\n{traceback.format_exc()}")
+            raise ValidationError(f"Error al crear ficha: {str(e)}")
 
     def write(self, vals):
         if 'temporadas_id' in vals and any(rec.componentes_ids for rec in self):
             raise ValidationError("No puede cambiar de temporada con componentes existentes")
-            
         if 'articulos_id' in vals:
             if any(rec.componentes_ids for rec in self):
-                raise ValidationError("No puede cambiar de articulo con componentes existentes")
-            if self.search([
-                ('id', 'not in', self.ids),
+                raise ValidationError("No puede cambiar de artículo con componentes existentes")            
+            existing = self.search([
+                ('id', '!=', self.id),
                 ('temporadas_id', '=', vals.get('temporadas_id', self.temporadas_id.id)),
-                ('articulos_id', '=', vals['articulos_id'])
-            ]):
-                raise ValidationError("Ya existe una ficha para este articulo y temporada")
-        
-        res = super().write(vals)
-        
-        if 'articulos_id' in vals:
-            self._descomponer_sku()
-            self.link_components()
+                ('articulos_id', '=', vals['articulos_id']),
+                ('state', '=', 'done')  
+            ], limit=1)
+            if existing:
+                raise ValidationError("Ya existe una ficha FINALIZADA para este artículo y temporada")
+        try:
+            res = super().write(vals)
             
-        return res
+            if 'articulos_id' in vals:
+                self._descomponer_sku()
+                if self.articulos_id.default_code and not self.componentes_ids:
+                    self.action_importar_componentes()
+            return res
+            
+        except Exception as e:
+            _logger.error(f"Error actualizando ficha: {str(e)}\n{traceback.format_exc()}")
+            raise ValidationError(f"Error al actualizar ficha: {str(e)}")
 
     def unlink(self):
         for record in self:
@@ -130,13 +233,11 @@ class FichaTecnica(models.Model):
         for record in self:
             if not record.articulos_id:
                 continue
-                
-            componentes = self.env['cl.product.componente'].search(
-                [('articulo_id', '=', record.articulos_id.id)]
-            )
-            record.componentes_ids = [(6, 0, componentes.ids)]
-            if not record.articulos_id.default_code:
-                record.articulos_id.default_code = f"SKU-{record.id:06d}"
+            components = self.env['mrp.bom.line'].search([
+                ('bom_id.product_tmpl_id', '=', record.articulos_id.id)
+            ]).mapped('product_id.product_tmpl_id')
+            
+            record.componentes_ids = [(6, 0, components.ids)]
 
     def _descomponer_sku(self):
         for record in self:
@@ -159,16 +260,13 @@ class FichaTecnica(models.Model):
                 for field_name, model_name, start, length in estructura:
                     try:
                         code = sku[start:start+length].strip()
-                        
                         if not code:
                             if field_name != 'correlativo_id':  
                                 raise ValidationError(
                                     f"Posicion {start}-{start+length-1}: Codigo vacio en SKU"
                                 )
                             continue
-                        
                         Model = self.env[model_name]
-                        
                         if 'code' in Model._fields:
                             domain = [('code', '=', code)]
                         else:
@@ -237,13 +335,10 @@ class FichaTecnica(models.Model):
                     f'componente{i}_umedida': comp.umedida,
                     f'componente{i}_cantidad_id': comp.cantidad_id,
                 }
-                
                 if comp.compra_manufactura_id:
-                    componente_vals[f'componente{i}_compra_manufactura_id'] = comp.compra_manufactura_id.id
-                    
+                    componente_vals[f'componente{i}_compra_manufactura_id'] = comp.compra_manufactura_id.id 
                 if comp.articulo_id:
-                    componente_vals[f'componente{i}_articulo_id'] = comp.articulo_id.id
-                    
+                    componente_vals[f'componente{i}_articulo_id'] = comp.articulo_id.id 
                 if comp.departamento_id and hasattr(copia, f'componente{i}_departamento_id'):
                     dept = self.env['hr.department'].search(
                         [('name', '=', comp.departamento_id.name)], 
@@ -251,9 +346,7 @@ class FichaTecnica(models.Model):
                     )
                     if dept:
                         componente_vals[f'componente{i}_departamento_id'] = dept.id
-                
                 copia.write(componente_vals)
-            
             return {
                 'name': 'Copia Realizada',
                 'type': 'ir.actions.act_window',
@@ -276,4 +369,3 @@ class FichaTecnica(models.Model):
             _logger.error(f"Error duplicando ficha: {e}\n{traceback.format_exc()}")
             raise ValidationError(_("Error al duplicar: %s") % str(e))
             
-  

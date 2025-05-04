@@ -8,7 +8,6 @@
                 <tree string="Ficha Tecnica" editable="bottom">
                     <field name="temporadas_id"/>
                     <field name="articulos_id"/>
-                    <button name="unlink" string="Eliminar" type="object" class="btn-danger" confirm="Estas seguro de que deseas eliminar este registro?"/>
                 </tree>
             </field>
         </record>
@@ -44,6 +43,9 @@
                                         <field name="costo_unitario_id"/>
                                         <field name="costo_ampliado_id"/>
                                         <field name="departamento_id"/>
+                                        <field name="default_code"/>
+                                        <field name="sequence"/>
+                                        <button name="unlink" type="object" icon="fa-trash-o" confirm="¿Estas seguro de que deseas eliminar este registro?"/>
                                     </tree>
                                 </field>
                             </page>

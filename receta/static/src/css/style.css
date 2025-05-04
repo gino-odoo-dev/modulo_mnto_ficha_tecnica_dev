@@ -6,8 +6,12 @@
     margin-bottom: 30px !important;
 } 
 
-.o_list_record_remove button {
-    color: #ff0000 !important;
+.fa fa-trash-o {
+    color: #111827 !important;
+}
+
+.btn-link {
+    color: #111827!important;
 }
 
 .o_form_view .o_horizontal_separator:not(:empty) {
@@ -44,4 +48,8 @@
     color: #000 !important;
     font-size: 12px !important;
     font-weight: 500 !important;
+}
+
+button.fa-times[name="delete"] {
+    display: none !important;
 }
